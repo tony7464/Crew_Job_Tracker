@@ -1,0 +1,386 @@
+{
+  "info": {
+    "name": "Crew Job Tracker",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "baseUrl", "value": "http://127.0.0.1:5000"},
+    {"key": "adaId", "value": ""},
+    {"key": "clientId", "value": ""},
+    {"key": "jobId", "value": ""},
+    {"key": "jobId2", "value": ""}
+  ],
+  "item": [
+    {
+      "name": "Signup rejects password_hash",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/signup",
+        "body": {"mode": "raw", "raw": "{\"username\":\"hacker\",\"email\":\"hacker@example.com\",\"password\":\"password\",\"password_hash\":\"nope\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Signup Ada",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/signup",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada\",\"email\":\"ada@example.com\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "const body = pm.response.json();",
+        "pm.test('user has no password', () => {",
+        "  pm.expect(body).to.not.have.property('password');",
+        "  pm.expect(body).to.not.have.property('password_hash');",
+        "  pm.expect(body.username).to.eql('ada');",
+        "});",
+        "pm.collectionVariables.set('adaId', String(body.id));"
+      ]}}]
+    },
+    {
+      "name": "Signup duplicate username",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/signup",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada\",\"email\":\"other@example.com\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Signup duplicate email",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/signup",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada2\",\"email\":\"ada@example.com\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Signup Bob",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/signup",
+        "body": {"mode": "raw", "raw": "{\"username\":\"bob\",\"email\":\"bob@example.com\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('201', () => pm.response.to.have.status(201));"]}}]
+    },
+    {
+      "name": "Logout",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/logout"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]}}]
+    },
+    {
+      "name": "Check session logged out",
+      "request": {"method": "GET", "url": "{{baseUrl}}/check_session"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"]}}]
+    },
+    {
+      "name": "Login bad password",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/login",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada\",\"password\":\"wrong\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"]}}]
+    },
+    {
+      "name": "Clients require login",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"]}}]
+    },
+    {
+      "name": "Jobs require login",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('401', () => pm.response.to.have.status(401));"]}}]
+    },
+    {
+      "name": "Login Ada",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/login",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('ada', () => pm.expect(pm.response.json().username).to.eql('ada'));"
+      ]}}]
+    },
+    {
+      "name": "Check session Ada",
+      "request": {"method": "GET", "url": "{{baseUrl}}/check_session"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('ada', () => pm.expect(pm.response.json().username).to.eql('ada'));"
+      ]}}]
+    },
+    {
+      "name": "Client missing name",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients",
+        "body": {"mode": "raw", "raw": "{\"phone\":\"555-0100\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Client rejects user_id",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients",
+        "body": {"mode": "raw", "raw": "{\"name\":\"Sneaky\",\"user_id\":1}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Create client",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients",
+        "body": {"mode": "raw", "raw": "{\"name\":\"Oak Street\",\"address\":\"10 Oak St\",\"phone\":\"555-0100\",\"notes\":\"Gate code 1234\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "const body = pm.response.json();",
+        "pm.collectionVariables.set('clientId', String(body.id));",
+        "pm.test('owned by ada', () => pm.expect(body.user_id).to.eql(Number(pm.collectionVariables.get('adaId'))));"
+      ]}}]
+    },
+    {
+      "name": "List clients",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('one client', () => {",
+        "  pm.expect(body).to.have.lengthOf(1);",
+        "  pm.expect(body[0]).to.not.have.property('jobs');",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Get client",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('empty jobs', () => pm.expect(pm.response.json().jobs).to.eql([]));"
+      ]}}]
+    },
+    {
+      "name": "Patch client",
+      "request": {
+        "method": "PATCH",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients/{{clientId}}",
+        "body": {"mode": "raw", "raw": "{\"name\":\"Oak Street Offices\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('renamed', () => pm.expect(pm.response.json().name).to.eql('Oak Street Offices'));"
+      ]}}]
+    },
+    {
+      "name": "Job bad status",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs",
+        "body": {"mode": "raw", "raw": "{\"client_id\":{{clientId}},\"date\":\"2026-10-06\",\"time\":\"09:30\",\"service_type\":\"Windows\",\"price\":150,\"status\":\"nope\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('400', () => pm.response.to.have.status(400));"]}}]
+    },
+    {
+      "name": "Create job",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs",
+        "body": {"mode": "raw", "raw": "{\"client_id\":{{clientId}},\"date\":\"2026-10-06\",\"time\":\"09:30\",\"service_type\":\"Windows\",\"price\":150}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "const body = pm.response.json();",
+        "pm.collectionVariables.set('jobId', String(body.id));",
+        "pm.test('defaults', () => {",
+        "  pm.expect(body.status).to.eql('scheduled');",
+        "  pm.expect(body.paid).to.eql(false);",
+        "  pm.expect(body.user_id).to.eql(Number(pm.collectionVariables.get('adaId')));",
+        "  pm.expect(body.price).to.eql(150);",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "List jobs",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('one job', () => pm.expect(pm.response.json()).to.have.lengthOf(1));"
+      ]}}]
+    },
+    {
+      "name": "Get job",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs/{{jobId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('date and time', () => {",
+        "  const body = pm.response.json();",
+        "  pm.expect(body.date).to.eql('2026-10-06');",
+        "  pm.expect(body.time).to.eql('09:30:00');",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Patch job",
+      "request": {
+        "method": "PATCH",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs/{{jobId}}",
+        "body": {"mode": "raw", "raw": "{\"status\":\"completed\",\"paid\":true}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('updated', () => {",
+        "  pm.expect(body.status).to.eql('completed');",
+        "  pm.expect(body.paid).to.eql(true);",
+        "  pm.expect(body.service_type).to.eql('Windows');",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Client nests jobs",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "const body = pm.response.json();",
+        "pm.test('nested job', () => {",
+        "  pm.expect(body.jobs).to.have.lengthOf(1);",
+        "  pm.expect(body.jobs[0].id).to.eql(Number(pm.collectionVariables.get('jobId')));",
+        "  pm.expect(body.jobs[0].status).to.eql('completed');",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Logout before Bob",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/logout"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]}}]
+    },
+    {
+      "name": "Login Bob",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/login",
+        "body": {"mode": "raw", "raw": "{\"username\":\"bob\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "pm.test('bob', () => pm.expect(pm.response.json().username).to.eql('bob'));"
+      ]}}]
+    },
+    {
+      "name": "Bob sees no clients",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('empty', () => pm.expect(pm.response.json()).to.eql([]));"
+      ]}}]
+    },
+    {
+      "name": "Bob cannot get Ada client",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Bob cannot get Ada job",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs/{{jobId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Bob cannot patch Ada client",
+      "request": {
+        "method": "PATCH",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients/{{clientId}}",
+        "body": {"mode": "raw", "raw": "{\"name\":\"Stolen\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Bob cannot delete Ada client",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Bob cannot create a job on Ada client",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs",
+        "body": {"mode": "raw", "raw": "{\"client_id\":{{clientId}},\"date\":\"2026-10-07\",\"time\":\"11:00\",\"service_type\":\"Janitorial\",\"price\":80}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Logout before Ada returns",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/logout"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]}}]
+    },
+    {
+      "name": "Login Ada again",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/login",
+        "body": {"mode": "raw", "raw": "{\"username\":\"ada\",\"password\":\"password\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"]}}]
+    },
+    {
+      "name": "Delete job",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/jobs/{{jobId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]}}]
+    },
+    {
+      "name": "Deleted job is gone",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs/{{jobId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Create second job",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs",
+        "body": {"mode": "raw", "raw": "{\"client_id\":{{clientId}},\"date\":\"2026-10-08\",\"time\":\"13:15\",\"service_type\":\"Janitorial\",\"price\":90}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('jobId2', String(pm.response.json().id));"
+      ]}}]
+    },
+    {
+      "name": "Delete client",
+      "request": {"method": "DELETE", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('204', () => pm.response.to.have.status(204));"]}}]
+    },
+    {
+      "name": "Deleted client is gone",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients/{{clientId}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    },
+    {
+      "name": "Deleting client removes its jobs",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs/{{jobId2}}"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": ["pm.test('404', () => pm.response.to.have.status(404));"]}}]
+    }
+  ]
+}
