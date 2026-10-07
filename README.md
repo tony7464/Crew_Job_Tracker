@@ -48,6 +48,44 @@ Open the URL Vite prints, usually `http://localhost:5173`.
 
 Vite proxies `/api` to `http://127.0.0.1:5000`, so the browser talks to one origin and the session cookie is sent with each API request. Start the API before the client.
 
+## Client structure
+
+`client/src/main.jsx` mounts the tree in this order: `BrowserRouter`, then `AuthProvider`, then `App`. Routing can read the logged-in user, and every page can call `useAuth()`.
+
+### React Router
+
+`App.jsx` maps the address bar to a page.
+
+| Path | Page | Who can open it |
+| --- | --- | --- |
+| `/` | Redirect | Anyone. Logged in goes to `/clients`. Logged out goes to `/login`. |
+| `/login` | `LoginPage` | Anyone. A logged-in user is sent to `/clients`. |
+| `/signup` | `SignupPage` | Anyone. A logged-in user is sent to `/clients`. |
+| `/clients` | `ClientsPage` | Logged-in users only. |
+| `/clients/:id` | `ClientDetail` | Logged-in users only. `:id` is the client id. |
+
+`ProtectedRoute` wraps the client pages. While `AuthContext` is still checking the session it shows "Loading…". With no user, it redirects to `/login`. The navbar uses the same `user` value to show either Log in / Sign up or the username and Log out.
+
+### AuthContext
+
+`client/src/context/AuthContext.jsx` holds `user` and `loading` for the whole app.
+
+On load it calls `GET /api/check_session`. A valid cookie sets `user`. A 401 sets `user` to `null`. `loading` stays true until that request finishes, so a refresh of `/clients` does not bounce to `/login` before the cookie has been checked.
+
+`signup` and `login` post to the API and store the returned user. Both pass `skipAuth` so a wrong password is handled by the form instead of the global "session ended" handler. `logout` calls `DELETE /api/logout` and clears `user`. If a later API call returns 401, that handler clears `user` and `ProtectedRoute` sends the browser to `/login`.
+
+`client/src/api.js` is the only `fetch` wrapper. It sends the session cookie, JSON-encodes request bodies, and turns error responses into an `Error` with `status` and the API's `errors` object.
+
+### Auth pages
+
+`LoginPage` and `SignupPage` are forms. Each one reads the fields with `FormData`, calls `login` or `signup` from `useAuth()`, and renders `ErrorMessage` when the API rejects the input. After `user` is set, the page redirects to `/clients`.
+
+### Clients pages
+
+`ClientsPage` loads `GET /api/clients` and lists the results. The add form posts to `POST /api/clients` and appends the created client to the list. `ClientForm` is shared with the edit screen: the list page passes no `initial` values, so a successful create clears the form.
+
+`ClientDetail` reads the id from the URL and loads `GET /api/clients/:id`. The response includes that client's jobs, which `JobList` renders. The same `ClientForm` patches the client. Delete asks for a second click, then calls `DELETE /api/clients/:id` and returns to `/clients`. A 404 renders "Client not found."
+
 ## API routes
 
 All routes are under `/api`.
