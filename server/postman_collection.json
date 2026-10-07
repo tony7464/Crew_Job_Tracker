@@ -4,7 +4,7 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {"key": "baseUrl", "value": "http://127.0.0.1:5000"},
+    {"key": "baseUrl", "value": "http://127.0.0.1:5000/api"},
     {"key": "adaId", "value": ""},
     {"key": "clientId", "value": ""},
     {"key": "jobId", "value": ""},

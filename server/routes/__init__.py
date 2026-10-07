@@ -18,6 +18,6 @@ def register_routes(app):
     from .clients import bp as clients_bp
     from .jobs import bp as jobs_bp
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(clients_bp)
-    app.register_blueprint(jobs_bp)
+    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(clients_bp, url_prefix="/api")
+    app.register_blueprint(jobs_bp, url_prefix="/api")
