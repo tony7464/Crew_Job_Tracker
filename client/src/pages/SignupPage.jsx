@@ -10,7 +10,7 @@ export default function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <Loading />;
-  if (user) return <Navigate to="/clients" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -39,7 +39,7 @@ export default function SignupPage() {
             name="username"
             autoComplete="username"
             required
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="field"
           />
         </label>
         <label className="block text-sm font-medium">
@@ -49,7 +49,7 @@ export default function SignupPage() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="field"
           />
         </label>
         <label className="block text-sm font-medium">
@@ -59,14 +59,14 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             required
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+            className="field"
           />
         </label>
         <ErrorMessage error={error} />
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded bg-sky-700 px-4 py-2 text-white hover:bg-sky-800 disabled:opacity-60"
+          className="btn w-full"
         >
           Create account
         </button>

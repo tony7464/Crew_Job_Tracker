@@ -27,7 +27,7 @@ export default function ClientsPage() {
     <div className="space-y-8">
       <section>
         <h1 className="text-2xl font-semibold">Clients</h1>
-        <div className="mt-4 rounded border border-slate-200 bg-white p-4">
+        <div className="card mt-4">
           <h2 className="font-medium">Add a client</h2>
           <div className="mt-4">
             <ClientForm onSubmit={createClient} submitLabel="Add client" />

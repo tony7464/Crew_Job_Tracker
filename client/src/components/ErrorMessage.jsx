@@ -8,7 +8,7 @@ export default function ErrorMessage({ error }) {
     : [error.message];
 
   return (
-    <p role="alert" className="text-sm text-red-700">
+    <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
       {lines.join(" ")}
     </p>
   );

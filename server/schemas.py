@@ -13,6 +13,10 @@ class JobSchema(Schema):
     paid = fields.Bool()
     notes = fields.Str(allow_none=True)
     client_id = fields.Int(required=True)
+    client_name = fields.Function(
+        lambda obj: obj.client.name if getattr(obj, "client", None) else None,
+        dump_only=True,
+    )
     user_id = fields.Int(dump_only=True)
 
     class Meta:

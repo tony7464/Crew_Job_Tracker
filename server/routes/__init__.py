@@ -16,8 +16,10 @@ def login_required(view):
 def register_routes(app):
     from .auth import bp as auth_bp
     from .clients import bp as clients_bp
+    from .dashboard import bp as dashboard_bp
     from .jobs import bp as jobs_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(clients_bp, url_prefix="/api")
+    app.register_blueprint(dashboard_bp, url_prefix="/api")
     app.register_blueprint(jobs_bp, url_prefix="/api")

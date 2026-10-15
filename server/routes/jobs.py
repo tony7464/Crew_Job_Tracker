@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request, session
+from sqlalchemy.orm import joinedload
 
 from ..models import Client, Job, db
-from ..schemas import JobSchema
+from ..schemas import STATUSES, JobSchema
 from . import login_required
 
 bp = Blueprint("jobs", __name__)
@@ -21,10 +22,28 @@ def owned_client(client_id):
     )
 
 
+def owned_jobs():
+    return (
+        db.select(Job)
+        .options(joinedload(Job.client))
+        .filter_by(user_id=session["user_id"])
+        .order_by(Job.date, Job.time)
+    )
+
+
 @bp.get("/jobs")
 @login_required
 def list_jobs():
-    jobs = db.session.scalars(db.select(Job).filter_by(user_id=session["user_id"])).all()
+    stmt = owned_jobs()
+    status = request.args.get("status")
+    if status in STATUSES:
+        stmt = stmt.filter_by(status=status)
+    paid = request.args.get("paid")
+    if paid == "true":
+        stmt = stmt.filter_by(paid=True)
+    elif paid == "false":
+        stmt = stmt.filter_by(paid=False)
+    jobs = db.session.scalars(stmt).unique().all()
     return jsonify(jobs_schema.dump(jobs))
 
 

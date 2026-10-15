@@ -48,7 +48,7 @@ export default function ClientDetail() {
           <div>Notes: {client.notes || "—"}</div>
         </dl>
       </div>
-      <section className="rounded border border-slate-200 bg-white p-4">
+      <section className="card">
         <h2 className="font-medium">Edit client</h2>
         <div className="mt-4">
           <ClientForm
@@ -60,7 +60,12 @@ export default function ClientDetail() {
         </div>
       </section>
       <section>
-        <h2 className="font-medium">Job history</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-medium">Job history</h2>
+          <Link to={`/jobs?client=${client.id}`} className="text-sm text-sky-800 hover:underline">
+            Schedule a job
+          </Link>
+        </div>
         <div className="mt-3">
           <JobList jobs={client.jobs} />
         </div>

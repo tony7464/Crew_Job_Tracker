@@ -1,8 +1,6 @@
 import { useState } from "react";
 import ErrorMessage from "./ErrorMessage";
 
-const fieldClass = "mt-1 w-full rounded border border-slate-300 px-3 py-2";
-
 export default function ClientForm({ initial, onSubmit, submitLabel }) {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -31,15 +29,15 @@ export default function ClientForm({ initial, onSubmit, submitLabel }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <label className="block text-sm font-medium">
         Name
-        <input name="name" defaultValue={initial?.name} required className={fieldClass} />
+        <input name="name" defaultValue={initial?.name} required className="field" />
       </label>
       <label className="block text-sm font-medium">
         Address
-        <input name="address" defaultValue={initial?.address ?? ""} className={fieldClass} />
+        <input name="address" defaultValue={initial?.address ?? ""} className="field" />
       </label>
       <label className="block text-sm font-medium">
         Phone
-        <input name="phone" defaultValue={initial?.phone ?? ""} className={fieldClass} />
+        <input name="phone" defaultValue={initial?.phone ?? ""} className="field" />
       </label>
       <label className="block text-sm font-medium">
         Notes
@@ -47,14 +45,14 @@ export default function ClientForm({ initial, onSubmit, submitLabel }) {
           name="notes"
           defaultValue={initial?.notes ?? ""}
           rows="3"
-          className={fieldClass}
+          className="field"
         />
       </label>
       <ErrorMessage error={error} />
       <button
         type="submit"
         disabled={submitting}
-        className="rounded bg-sky-700 px-4 py-2 text-white hover:bg-sky-800 disabled:opacity-60"
+        className="btn"
       >
         {submitLabel}
       </button>

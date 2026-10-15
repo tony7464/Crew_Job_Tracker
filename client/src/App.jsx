@@ -5,13 +5,16 @@ import Loading from "./components/Loading";
 import { useAuth } from "./context/AuthContext";
 import ClientDetail from "./pages/ClientDetail";
 import ClientsPage from "./pages/ClientsPage";
+import DashboardPage from "./pages/DashboardPage";
+import JobDetail from "./pages/JobDetail";
+import JobsPage from "./pages/JobsPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 
 function Home() {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  return <Navigate to={user ? "/clients" : "/login"} replace />;
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
 }
 
 export default function App() {
@@ -23,6 +26,30 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <JobDetail />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/clients"
             element={
