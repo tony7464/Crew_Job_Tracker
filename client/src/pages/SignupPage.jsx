@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function SignupPage() {
   const { user, loading, signup } = useAuth();
@@ -59,9 +59,11 @@ export default function SignupPage() {
             type="password"
             autoComplete="new-password"
             required
+            minLength={8}
             className="field"
           />
         </label>
+        <p className="text-sm text-slate-500">At least 8 characters.</p>
         <ErrorMessage error={error} />
         <button
           type="submit"

@@ -4,16 +4,11 @@ from ..models import Client, db
 from ..pagination import paginate
 from ..schemas import ClientSchema
 from . import login_required
+from .ownership import not_found, owned_client
 
 bp = Blueprint("clients", __name__)
 client_schema = ClientSchema()
 clients_schema = ClientSchema(many=True, exclude=("jobs",))
-
-
-def owned_client(client_id):
-    return db.session.scalar(
-        db.select(Client).filter_by(id=client_id, user_id=session["user_id"])
-    )
 
 
 @bp.get("/clients")
@@ -42,7 +37,7 @@ def create_client():
 def get_client(client_id):
     client = owned_client(client_id)
     if client is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     return jsonify(client_schema.dump(client))
 
 
@@ -51,7 +46,7 @@ def get_client(client_id):
 def update_client(client_id):
     client = owned_client(client_id)
     if client is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     data = client_schema.load(request.get_json(silent=True) or {}, partial=True)
     for key, value in data.items():
         setattr(client, key, value)
@@ -64,7 +59,7 @@ def update_client(client_id):
 def delete_client(client_id):
     client = owned_client(client_id)
     if client is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     db.session.delete(client)
     db.session.commit()
     return "", 204

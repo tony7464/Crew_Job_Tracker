@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function LoginPage() {
   const { user, loading, login } = useAuth();

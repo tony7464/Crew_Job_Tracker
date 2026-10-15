@@ -1,3 +1,14 @@
+function messageFrom(data) {
+  if (data.errors) {
+    return Object.entries(data.errors)
+      .flatMap(([field, messages]) =>
+        [].concat(messages).map((message) => `${field}: ${message}`),
+      )
+      .join(" ");
+  }
+  return data.error || "Something went wrong";
+}
+
 let onUnauthorized = () => {};
 
 export function setOnUnauthorized(handler) {
@@ -17,7 +28,7 @@ export async function api(path, { method = "GET", body, skipAuth = false } = {})
   const data = await response.json().catch(() => ({}));
   if (response.status === 401 && !skipAuth) onUnauthorized();
   if (!response.ok) {
-    const error = new Error(data.error || "Something went wrong");
+    const error = new Error(messageFrom(data));
     error.status = response.status;
     error.errors = data.errors;
     throw error;

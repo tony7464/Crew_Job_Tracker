@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { formatMoney, formatTime } from "../utils/format";
 
 const STATUSES = ["scheduled", "completed", "cancelled"];
 
@@ -9,16 +10,19 @@ const badgeClass = {
   cancelled: "bg-slate-200 text-slate-600",
 };
 
-export function formatTime(value) {
-  return value ? value.slice(0, 5) : "";
-}
-
-export function formatMoney(value) {
-  return `$${Number(value).toFixed(2)}`;
-}
-
 export default function JobList({ jobs, showClient = false, onUpdate, onDelete, empty = "No jobs yet." }) {
   const [confirmId, setConfirmId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+
+  async function confirmDelete(id) {
+    setDeletingId(id);
+    try {
+      await onDelete(id);
+      setConfirmId(null);
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (!jobs.length) {
     return <p className="text-slate-500">{empty}</p>;
@@ -70,13 +74,24 @@ export default function JobList({ jobs, showClient = false, onUpdate, onDelete, 
               </label>
               {onDelete &&
                 (confirmId === job.id ? (
-                  <button
-                    type="button"
-                    onClick={() => onDelete(job.id)}
-                    className="text-sm text-red-700 hover:underline"
-                  >
-                    Confirm delete
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => confirmDelete(job.id)}
+                      disabled={deletingId === job.id}
+                      className="text-sm text-red-700 hover:underline disabled:opacity-60"
+                    >
+                      {deletingId === job.id ? "Deleting…" : "Confirm delete"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(null)}
+                      disabled={deletingId === job.id}
+                      className="text-sm text-slate-600 hover:underline disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"

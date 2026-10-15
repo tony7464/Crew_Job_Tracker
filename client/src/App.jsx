@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Loading from "./components/Loading";
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./context/useAuth";
 import ClientDetail from "./pages/ClientDetail";
 import ClientsPage from "./pages/ClientsPage";
 import DashboardPage from "./pages/DashboardPage";

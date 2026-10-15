@@ -1,13 +1,5 @@
+import { formatDay } from "../utils/format";
 import JobList from "./JobList";
-
-function formatDay(value) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export default function WeekSchedule({ jobs, onUpdate }) {
   if (!jobs.length) {
@@ -25,7 +17,7 @@ export default function WeekSchedule({ jobs, onUpdate }) {
     <div className="space-y-5">
       {days.map((day) => (
         <section key={day.date}>
-          <h3 className="mb-2 text-sm font-medium text-slate-500">{formatDay(day.date)}</h3>
+          <h3 className="mb-2 text-sm font-medium text-slate-500">{formatDay(day.date, "long")}</h3>
           <JobList jobs={day.jobs} showClient onUpdate={onUpdate} />
         </section>
       ))}

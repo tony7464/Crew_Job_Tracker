@@ -1,26 +1,15 @@
 from flask import Blueprint, jsonify, request, session
 from sqlalchemy.orm import joinedload
 
-from ..models import Client, Job, db
-from ..pagination import PaginationError, paginate
+from ..models import Job, db
+from ..pagination import QueryParamError, paginate
 from ..schemas import STATUSES, JobSchema
 from . import login_required
+from .ownership import not_found, owned_client, owned_job
 
 bp = Blueprint("jobs", __name__)
 job_schema = JobSchema()
 jobs_schema = JobSchema(many=True)
-
-
-def owned_job(job_id):
-    return db.session.scalar(
-        db.select(Job).filter_by(id=job_id, user_id=session["user_id"])
-    )
-
-
-def owned_client(client_id):
-    return db.session.scalar(
-        db.select(Client).filter_by(id=client_id, user_id=session["user_id"])
-    )
 
 
 def owned_jobs():
@@ -46,7 +35,7 @@ def list_jobs():
         elif paid == "false":
             stmt = stmt.filter_by(paid=False)
         else:
-            raise PaginationError("paid", "Must be true or false.")
+            raise QueryParamError("paid", "Must be true or false.")
     return jsonify(paginate(stmt, jobs_schema))
 
 
@@ -55,7 +44,7 @@ def list_jobs():
 def create_job():
     data = job_schema.load(request.get_json(silent=True) or {})
     if owned_client(data["client_id"]) is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     data.setdefault("status", "scheduled")
     data.setdefault("paid", False)
     job = Job(user_id=session["user_id"], **data)
@@ -69,7 +58,7 @@ def create_job():
 def get_job(job_id):
     job = owned_job(job_id)
     if job is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     return jsonify(job_schema.dump(job))
 
 
@@ -78,10 +67,10 @@ def get_job(job_id):
 def update_job(job_id):
     job = owned_job(job_id)
     if job is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     data = job_schema.load(request.get_json(silent=True) or {}, partial=True)
     if "client_id" in data and owned_client(data["client_id"]) is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     for key, value in data.items():
         setattr(job, key, value)
     db.session.commit()
@@ -93,7 +82,7 @@ def update_job(job_id):
 def delete_job(job_id):
     job = owned_job(job_id)
     if job is None:
-        return jsonify(error="Not found"), 404
+        return not_found()
     db.session.delete(job)
     db.session.commit()
     return "", 204

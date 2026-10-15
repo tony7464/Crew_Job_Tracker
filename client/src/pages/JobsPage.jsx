@@ -32,7 +32,12 @@ export default function JobsPage() {
     let cancelled = false;
     api(`/api/jobs?${params}`)
       .then((data) => {
-        if (!cancelled) setResult(data);
+        if (cancelled) return;
+        if (data.items.length === 0 && page > 1) {
+          setPage(page - 1);
+          return;
+        }
+        setResult(data);
       })
       .catch((err) => {
         if (!cancelled) setError(err);

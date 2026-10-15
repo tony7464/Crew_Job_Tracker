@@ -1,9 +1,12 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function NavBar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+
+  const navClass = ({ isActive }) =>
+    isActive ? "font-medium text-sky-800" : "hover:underline";
 
   async function handleLogout() {
     await logout();
@@ -22,19 +25,19 @@ export default function NavBar() {
               <>
                 <NavLink
                   to="/dashboard"
-                  className={({ isActive }) => (isActive ? "font-medium text-sky-800" : "hover:underline")}
+                  className={navClass}
                 >
                   Dashboard
                 </NavLink>
                 <NavLink
                   to="/jobs"
-                  className={({ isActive }) => (isActive ? "font-medium text-sky-800" : "hover:underline")}
+                  className={navClass}
                 >
                   Jobs
                 </NavLink>
                 <NavLink
                   to="/clients"
-                  className={({ isActive }) => (isActive ? "font-medium text-sky-800" : "hover:underline")}
+                  className={navClass}
                 >
                   Clients
                 </NavLink>

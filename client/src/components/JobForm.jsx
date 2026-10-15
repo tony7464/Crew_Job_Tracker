@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import ErrorMessage from "./ErrorMessage";
-import { formatTime } from "./JobList";
+import { formatTime } from "../utils/format";
 
 export default function JobForm({ clients, initial, onSubmit, submitLabel }) {
   const [error, setError] = useState(null);

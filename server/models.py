@@ -29,7 +29,10 @@ class Client(db.Model):
 
     user = db.relationship("User", back_populates="clients")
     jobs = db.relationship(
-        "Job", back_populates="client", cascade="all, delete-orphan"
+        "Job",
+        back_populates="client",
+        cascade="all, delete-orphan",
+        order_by="Job.date, Job.time, Job.id",
     )
 
 

@@ -1,6 +1,18 @@
-from marshmallow import RAISE, Schema, fields, validate
+from marshmallow import RAISE, Schema, fields, pre_load, validate
 
 STATUSES = ("scheduled", "completed", "cancelled")
+MAX_PRICE = 99999999.99
+
+
+def strip_fields(data, keys):
+    if not isinstance(data, dict):
+        return data
+    data = dict(data)
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, str):
+            data[key] = value.strip()
+    return data
 
 
 class JobSchema(Schema):
@@ -9,7 +21,9 @@ class JobSchema(Schema):
     time = fields.Time(required=True)
     service_type = fields.Str(required=True, validate=validate.Length(min=1))
     status = fields.Str(validate=validate.OneOf(STATUSES))
-    price = fields.Float(required=True, validate=validate.Range(min=0))
+    price = fields.Float(
+        required=True, validate=validate.Range(min=0, max=MAX_PRICE)
+    )
     paid = fields.Bool()
     notes = fields.Str(allow_none=True)
     client_id = fields.Int(required=True)
@@ -21,6 +35,10 @@ class JobSchema(Schema):
 
     class Meta:
         unknown = RAISE
+
+    @pre_load
+    def strip_strings(self, data, **kwargs):
+        return strip_fields(data, ("service_type", "notes"))
 
 
 class ClientSchema(Schema):
@@ -35,14 +53,25 @@ class ClientSchema(Schema):
     class Meta:
         unknown = RAISE
 
+    @pre_load
+    def strip_strings(self, data, **kwargs):
+        return strip_fields(data, ("name", "address", "phone", "notes"))
+
 
 class SignupSchema(Schema):
     username = fields.Str(required=True, validate=validate.Length(min=1))
     email = fields.Email(required=True)
-    password = fields.Str(required=True, validate=validate.Length(min=1), load_only=True)
+    password = fields.Str(required=True, validate=validate.Length(min=8), load_only=True)
 
     class Meta:
         unknown = RAISE
+
+    @pre_load
+    def normalize(self, data, **kwargs):
+        data = strip_fields(data, ("username", "email"))
+        if isinstance(data, dict) and isinstance(data.get("email"), str):
+            data["email"] = data["email"].lower()
+        return data
 
 
 class LoginSchema(Schema):
@@ -51,6 +80,10 @@ class LoginSchema(Schema):
 
     class Meta:
         unknown = RAISE
+
+    @pre_load
+    def strip_username(self, data, **kwargs):
+        return strip_fields(data, ("username",))
 
 
 class UserSchema(Schema):

@@ -8,17 +8,29 @@ import Loading from "../components/Loading";
 
 export default function ClientDetail() {
   const { id } = useParams();
+  return <ClientDetailView key={id} id={id} />;
+}
+
+function ClientDetailView({ id }) {
   const navigate = useNavigate();
   const [client, setClient] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
-    setClient(null);
-    setError(null);
+    let cancelled = false;
     api(`/api/clients/${id}`)
-      .then(setClient)
-      .catch(setError);
+      .then((data) => {
+        if (!cancelled) setClient(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function save(body) {
@@ -27,8 +39,15 @@ export default function ClientDetail() {
   }
 
   async function remove() {
-    await api(`/api/clients/${id}`, { method: "DELETE" });
-    navigate("/clients");
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api(`/api/clients/${id}`, { method: "DELETE" });
+      navigate("/clients");
+    } catch (err) {
+      setDeleteError(err);
+      setDeleting(false);
+    }
   }
 
   if (error?.status === 404) return <p>Client not found.</p>;
@@ -70,14 +89,26 @@ export default function ClientDetail() {
           <JobList jobs={client.jobs} />
         </div>
       </section>
+      <ErrorMessage error={deleteError} />
       {confirming ? (
-        <button
-          type="button"
-          onClick={remove}
-          className="rounded border border-red-300 px-4 py-2 text-sm text-red-700"
-        >
-          Confirm delete
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={remove}
+            disabled={deleting}
+            className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Confirm delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            disabled={deleting}
+            className="text-sm text-slate-600 hover:underline disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
       ) : (
         <button
           type="button"

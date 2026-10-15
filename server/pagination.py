@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from .models import db
 
 
-class PaginationError(Exception):
+class QueryParamError(Exception):
     def __init__(self, field, message):
         self.errors = {field: [message]}
 
@@ -15,7 +15,7 @@ def page_args(default_per_page=10, max_per_page=50):
     page = _positive_int("page", 1)
     per_page = _positive_int("per_page", default_per_page)
     if per_page > max_per_page:
-        raise PaginationError("per_page", "Must be at most 50.")
+        raise QueryParamError("per_page", "Must be at most 50.")
     return page, per_page
 
 
@@ -42,8 +42,8 @@ def _positive_int(name, default):
     if raw is None or raw.strip() == "":
         return default
     if not raw.strip().isdigit():
-        raise PaginationError(name, "Must be a positive integer.")
+        raise QueryParamError(name, "Must be a positive integer.")
     value = int(raw)
     if value < 1:
-        raise PaginationError(name, "Must be a positive integer.")
+        raise QueryParamError(name, "Must be a positive integer.")
     return value

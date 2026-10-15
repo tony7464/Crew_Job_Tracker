@@ -7,21 +7,37 @@ import Loading from "../components/Loading";
 
 export default function JobDetail() {
   const { id } = useParams();
+  return <JobDetailView key={id} id={id} />;
+}
+
+function JobDetailView({ id }) {
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [clients, setClients] = useState(null);
   const [error, setError] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
-    setJob(null);
-    setError(null);
+    let cancelled = false;
     api(`/api/jobs/${id}`)
-      .then(setJob)
-      .catch(setError);
+      .then((data) => {
+        if (!cancelled) setJob(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
     fetchAll("/api/clients")
-      .then(setClients)
-      .catch(setError);
+      .then((data) => {
+        if (!cancelled) setClients(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function save(body) {
@@ -30,8 +46,15 @@ export default function JobDetail() {
   }
 
   async function remove() {
-    await api(`/api/jobs/${id}`, { method: "DELETE" });
-    navigate("/jobs");
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api(`/api/jobs/${id}`, { method: "DELETE" });
+      navigate("/jobs");
+    } catch (err) {
+      setDeleteError(err);
+      setDeleting(false);
+    }
   }
 
   if (error?.status === 404) return <p>Job not found.</p>;
@@ -59,14 +82,26 @@ export default function JobDetail() {
           />
         </div>
       </section>
+      <ErrorMessage error={deleteError} />
       {confirming ? (
-        <button
-          type="button"
-          onClick={remove}
-          className="rounded border border-red-300 px-4 py-2 text-sm text-red-700"
-        >
-          Confirm delete
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={remove}
+            disabled={deleting}
+            className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-60"
+          >
+            {deleting ? "Deleting…" : "Confirm delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            disabled={deleting}
+            className="text-sm text-slate-600 hover:underline disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
       ) : (
         <button
           type="button"

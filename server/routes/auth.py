@@ -1,8 +1,10 @@
 from flask import Blueprint, jsonify, request, session
+from sqlalchemy import func
 
 from ..app import bcrypt
 from ..models import User, db
 from ..schemas import LoginSchema, SignupSchema, UserSchema
+from .ownership import current_user, unauthorized
 
 bp = Blueprint("auth", __name__)
 signup_schema = SignupSchema()
@@ -10,13 +12,21 @@ login_schema = LoginSchema()
 user_schema = UserSchema()
 
 
+def _user_by_username(username):
+    return db.session.scalar(
+        db.select(User).where(func.lower(User.username) == username.lower())
+    )
+
+
 @bp.post("/signup")
 def signup():
     data = signup_schema.load(request.get_json(silent=True) or {})
-    if db.session.scalar(db.select(User).filter_by(username=data["username"])):
-        return jsonify(error="Username already taken"), 400
-    if db.session.scalar(db.select(User).filter_by(email=data["email"])):
-        return jsonify(error="Email already taken"), 400
+    if _user_by_username(data["username"]):
+        return jsonify(errors={"username": ["Username already taken"]}), 400
+    if db.session.scalar(
+        db.select(User).where(func.lower(User.email) == data["email"].lower())
+    ):
+        return jsonify(errors={"email": ["Email already taken"]}), 400
     user = User(
         username=data["username"],
         email=data["email"],
@@ -24,6 +34,7 @@ def signup():
     )
     db.session.add(user)
     db.session.commit()
+    session.permanent = True
     session["user_id"] = user.id
     return user_schema.dump(user), 201
 
@@ -31,26 +42,24 @@ def signup():
 @bp.post("/login")
 def login():
     data = login_schema.load(request.get_json(silent=True) or {})
-    user = db.session.scalar(db.select(User).filter_by(username=data["username"]))
+    user = _user_by_username(data["username"])
     if not user or not bcrypt.check_password_hash(user.password_hash, data["password"]):
-        return jsonify(error="Invalid username or password"), 401
+        return jsonify(errors={"auth": ["Invalid username or password"]}), 401
+    session.permanent = True
     session["user_id"] = user.id
     return user_schema.dump(user)
 
 
 @bp.delete("/logout")
 def logout():
-    session.pop("user_id", None)
+    session.clear()
     return "", 204
 
 
 @bp.get("/check_session")
 def check_session():
-    user_id = session.get("user_id")
-    if user_id is None:
-        return jsonify(error="Unauthorized"), 401
-    user = db.session.get(User, user_id)
+    user = current_user()
     if user is None:
-        session.pop("user_id", None)
-        return jsonify(error="Unauthorized"), 401
+        session.clear()
+        return unauthorized()
     return user_schema.dump(user)

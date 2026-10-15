@@ -47,18 +47,20 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r server/requirements.txt
 flask --app server.app db upgrade -d server/migrations
+python -m server.seed
 flask --app server.app run --host 127.0.0.1 --port 5000
 ```
 
-The `-d` flag tells Flask-Migrate to use `server/migrations` when you run commands from the project root.
+`python -m server.seed` deletes existing rows and creates the user `demo` / `password123`, 5 clients, and 15 jobs. Signup passwords must be at least 8 characters. The `-d` flag tells Flask-Migrate to use `server/migrations` when you run commands from the project root.
 
 ### API with PostgreSQL
 
-Copy `server/.env.example` to `server/.env` and set `DATABASE_URL` and `SECRET_KEY`. A URL that starts with `postgres://` is accepted and rewritten to `postgresql://`. If `SECRET_KEY` is missing, the app logs a warning and uses a dev-only fallback.
+Copy `server/.env.example` to `server/.env` and set `DATABASE_URL` and `SECRET_KEY`. A `postgres://` or `postgresql://` URL with no driver is rewritten to `postgresql+psycopg2://`. A URL that already names a driver is left as-is. If `SECRET_KEY` is missing, the app logs a warning and uses a dev-only fallback. `SESSION_COOKIE_SECURE` defaults to false. Set it to `true` when the API is served over HTTPS.
 
 ```bash
 cp server/.env.example server/.env
 flask --app server.app db upgrade -d server/migrations
+python -m server.seed
 flask --app server.app run --host 127.0.0.1 --port 5000
 ```
 
@@ -80,7 +82,7 @@ All paths are under `/api`. Authenticated routes require the session cookie and 
 
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| POST | `/api/signup` | No | Create an account and start a session. Body: `username`, `email`, `password`. |
+| POST | `/api/signup` | No | Create an account and start a session. Body: `username`, `email`, and a `password` of at least 8 characters. |
 | POST | `/api/login` | No | Start a session. Body: `username`, `password`. |
 | DELETE | `/api/logout` | No | End the session. |
 | GET | `/api/check_session` | Yes | Return the logged-in user, or 401. |
@@ -120,7 +122,7 @@ Start the API, then from the project root:
 npx newman run server/postman_collection.json
 ```
 
-The collection signs up users named `ada` and `bob`, then checks auth, validation, ownership, pagination, and the dashboard. Those usernames must not already exist. For SQLite, delete `server/app.db`, run `flask --app server.app db upgrade -d server/migrations` again, and rerun Newman. For PostgreSQL, use an empty database.
+The collection signs up users named `ada_<timestamp>` and `bob_<timestamp>`, using 8-character passwords. It checks auth, validation, ownership, pagination, and the dashboard. Because the names change on each run, you can run it again against the same database.
 
 ## Screenshots
 

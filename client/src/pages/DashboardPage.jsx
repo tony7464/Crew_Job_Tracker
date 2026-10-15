@@ -4,14 +4,10 @@ import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
 import UnpaidJobsList from "../components/UnpaidJobsList";
 import WeekSchedule from "../components/WeekSchedule";
+import { formatDay } from "../utils/format";
 
-function formatDay(value) {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+function bySchedule(a, b) {
+  return a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.id - b.id;
 }
 
 export default function DashboardPage() {
@@ -36,7 +32,7 @@ export default function DashboardPage() {
           ? current.unpaid_jobs.filter((job) => job.id !== id)
           : current.unpaid_jobs.some((job) => job.id === id)
             ? current.unpaid_jobs.map((job) => (job.id === id ? updated : job))
-            : [...current.unpaid_jobs, updated],
+            : [...current.unpaid_jobs, updated].sort(bySchedule),
       }));
     } catch (err) {
       setActionError(err);
