@@ -4,24 +4,36 @@ import ClientForm from "../components/ClientForm";
 import ClientList from "../components/ClientList";
 import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState(null);
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    api("/api/clients")
-      .then(setClients)
-      .catch(setError);
-  }, []);
+    let cancelled = false;
+    api(`/api/clients?page=${page}`)
+      .then((data) => {
+        if (!cancelled) setResult(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, reloadKey]);
 
   async function createClient(body) {
-    const created = await api("/api/clients", { method: "POST", body });
-    setClients((current) => [...current, created]);
+    await api("/api/clients", { method: "POST", body });
+    if (page !== 1) setPage(1);
+    else setReloadKey((key) => key + 1);
   }
 
   if (error) return <ErrorMessage error={error} />;
-  if (!clients) return <Loading />;
+  if (!result) return <Loading />;
 
   return (
     <div className="space-y-8">
@@ -34,7 +46,10 @@ export default function ClientsPage() {
           </div>
         </div>
       </section>
-      <ClientList clients={clients} />
+      <section className="space-y-4">
+        <ClientList clients={result.items} />
+        <Pagination page={result.page} pages={result.pages} onPage={setPage} />
+      </section>
     </div>
   );
 }

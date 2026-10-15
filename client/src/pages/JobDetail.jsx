@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api } from "../api";
+import { api, fetchAll } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import Loading from "../components/Loading";
@@ -19,7 +19,7 @@ export default function JobDetail() {
     api(`/api/jobs/${id}`)
       .then(setJob)
       .catch(setError);
-    api("/api/clients")
+    fetchAll("/api/clients")
       .then(setClients)
       .catch(setError);
   }, [id]);

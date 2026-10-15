@@ -162,9 +162,13 @@
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
         "pm.test('200', () => pm.response.to.have.status(200));",
         "const body = pm.response.json();",
-        "pm.test('one client', () => {",
-        "  pm.expect(body).to.have.lengthOf(1);",
-        "  pm.expect(body[0]).to.not.have.property('jobs');",
+        "pm.test('default pagination', () => {",
+        "  pm.expect(body.items).to.have.lengthOf(1);",
+        "  pm.expect(body.page).to.eql(1);",
+        "  pm.expect(body.per_page).to.eql(10);",
+        "  pm.expect(body.total).to.eql(1);",
+        "  pm.expect(body.pages).to.eql(1);",
+        "  pm.expect(body.items[0]).to.not.have.property('jobs');",
         "});"
       ]}}]
     },
@@ -187,6 +191,49 @@
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
         "pm.test('200', () => pm.response.to.have.status(200));",
         "pm.test('renamed', () => pm.expect(pm.response.json().name).to.eql('Oak Street Offices'));"
+      ]}}]
+    },
+    {
+      "name": "Create client for paging",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/clients",
+        "body": {"mode": "raw", "raw": "{\"name\":\"Pine Street\"}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('pagingClientId', String(pm.response.json().id));"
+      ]}}]
+    },
+    {
+      "name": "Clients per_page=1",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients?per_page=1"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('first page', () => {",
+        "  pm.expect(body.items).to.have.lengthOf(1);",
+        "  pm.expect(body.items[0].name).to.eql('Oak Street Offices');",
+        "  pm.expect(body.page).to.eql(1);",
+        "  pm.expect(body.per_page).to.eql(1);",
+        "  pm.expect(body.total).to.eql(2);",
+        "  pm.expect(body.pages).to.eql(2);",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Clients page beyond last",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients?per_page=1&page=3"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('empty page', () => {",
+        "  pm.expect(body.items).to.eql([]);",
+        "  pm.expect(body.page).to.eql(3);",
+        "  pm.expect(body.total).to.eql(2);",
+        "  pm.expect(body.pages).to.eql(2);",
+        "});"
       ]}}]
     },
     {
@@ -224,7 +271,94 @@
       "request": {"method": "GET", "url": "{{baseUrl}}/jobs"},
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
         "pm.test('200', () => pm.response.to.have.status(200));",
-        "pm.test('one job', () => pm.expect(pm.response.json()).to.have.lengthOf(1));"
+        "const body = pm.response.json();",
+        "pm.test('default pagination', () => {",
+        "  pm.expect(body.items).to.have.lengthOf(1);",
+        "  pm.expect(body.page).to.eql(1);",
+        "  pm.expect(body.per_page).to.eql(10);",
+        "  pm.expect(body.total).to.eql(1);",
+        "  pm.expect(body.pages).to.eql(1);",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Create job for paging",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/jobs",
+        "body": {"mode": "raw", "raw": "{\"client_id\":{{pagingClientId}},\"date\":\"2026-10-07\",\"time\":\"10:00\",\"service_type\":\"Siding\",\"price\":40}"}
+      },
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('201', () => pm.response.to.have.status(201));",
+        "pm.collectionVariables.set('pagingJobId', String(pm.response.json().id));"
+      ]}}]
+    },
+    {
+      "name": "Jobs per_page=1",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs?per_page=1"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('first page', () => {",
+        "  pm.expect(body.items).to.have.lengthOf(1);",
+        "  pm.expect(body.items[0].id).to.eql(Number(pm.collectionVariables.get('jobId')));",
+        "  pm.expect(body.page).to.eql(1);",
+        "  pm.expect(body.per_page).to.eql(1);",
+        "  pm.expect(body.total).to.eql(2);",
+        "  pm.expect(body.pages).to.eql(2);",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Jobs page beyond last",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs?per_page=1&page=3"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('empty page', () => {",
+        "  pm.expect(body.items).to.eql([]);",
+        "  pm.expect(body.page).to.eql(3);",
+        "  pm.expect(body.total).to.eql(2);",
+        "  pm.expect(body.pages).to.eql(2);",
+        "});"
+      ]}}]
+    },
+    {
+      "name": "Invalid page",
+      "request": {"method": "GET", "url": "{{baseUrl}}/clients?page=0"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('400', () => pm.response.to.have.status(400));",
+        "pm.test('errors', () => pm.expect(pm.response.json().errors.page).to.be.an('array').that.is.not.empty);"
+      ]}}]
+    },
+    {
+      "name": "Invalid paid",
+      "request": {"method": "GET", "url": "{{baseUrl}}/jobs?paid=maybe"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('400', () => pm.response.to.have.status(400));",
+        "pm.test('errors', () => pm.expect(pm.response.json().errors.paid).to.be.an('array').that.is.not.empty);"
+      ]}}]
+    },
+    {
+      "name": "Dashboard",
+      "request": {"method": "GET", "url": "{{baseUrl}}/dashboard"},
+      "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+        "pm.test('200', () => pm.response.to.have.status(200));",
+        "const body = pm.response.json();",
+        "pm.test('week and unpaid', () => {",
+        "  pm.expect(body.week_jobs).to.be.an('array');",
+        "  pm.expect(body.unpaid_jobs).to.be.an('array');",
+        "  pm.expect(body.week_start).to.be.a('string');",
+        "  pm.expect(body.week_end).to.be.a('string');",
+        "  body.week_jobs.forEach((job) => {",
+        "    pm.expect(job.date >= body.week_start && job.date <= body.week_end).to.eql(true);",
+        "  });",
+        "  body.unpaid_jobs.forEach((job) => pm.expect(job.paid).to.eql(false));",
+        "  const ids = body.unpaid_jobs.map((job) => job.id);",
+        "  pm.expect(ids).to.include(Number(pm.collectionVariables.get('jobId')));",
+        "  pm.expect(ids).to.include(Number(pm.collectionVariables.get('pagingJobId')));",
+        "});"
       ]}}]
     },
     {
@@ -291,7 +425,11 @@
       "name": "Bob sees no clients",
       "request": {"method": "GET", "url": "{{baseUrl}}/clients"},
       "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
-        "pm.test('empty', () => pm.expect(pm.response.json()).to.eql([]));"
+        "const body = pm.response.json();",
+        "pm.test('empty', () => {",
+        "  pm.expect(body.items).to.eql([]);",
+        "  pm.expect(body.total).to.eql(0);",
+        "});"
       ]}}]
     },
     {

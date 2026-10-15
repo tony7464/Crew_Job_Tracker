@@ -1,65 +1,62 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api } from "../api";
+import { api, fetchAll } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
+import Pagination from "../components/Pagination";
 
 export default function JobsPage() {
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client");
   const [clients, setClients] = useState(null);
-  const [jobs, setJobs] = useState(null);
+  const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [status, setStatus] = useState("");
   const [paid, setPaid] = useState("");
+  const [page, setPage] = useState(1);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    api("/api/clients")
+    fetchAll("/api/clients")
       .then(setClients)
       .catch(setError);
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ page: String(page) });
     if (status) params.set("status", status);
     if (paid) params.set("paid", paid);
-    const query = params.toString();
-    api(`/api/jobs${query ? `?${query}` : ""}`)
-      .then(setJobs)
-      .catch(setError);
-  }, [status, paid]);
+    let cancelled = false;
+    api(`/api/jobs?${params}`)
+      .then((data) => {
+        if (!cancelled) setResult(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [status, paid, page, reloadKey]);
 
-  function matches(job) {
-    if (status && job.status !== status) return false;
-    if (paid === "true" && !job.paid) return false;
-    if (paid === "false" && job.paid) return false;
-    return true;
+  function reload() {
+    setReloadKey((key) => key + 1);
   }
 
   async function createJob(body) {
-    const created = await api("/api/jobs", { method: "POST", body });
-    if (matches(created)) {
-      setJobs((current) =>
-        [...current, created].sort(
-          (a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time),
-        ),
-      );
-    }
+    await api("/api/jobs", { method: "POST", body });
+    if (page !== 1) setPage(1);
+    else reload();
   }
 
   async function updateJob(id, patch) {
     setActionError(null);
     try {
-      const updated = await api(`/api/jobs/${id}`, { method: "PATCH", body: patch });
-      setJobs((current) =>
-        current.flatMap((job) => {
-          if (job.id !== id) return [job];
-          return matches(updated) ? [updated] : [];
-        }),
-      );
+      await api(`/api/jobs/${id}`, { method: "PATCH", body: patch });
+      reload();
     } catch (err) {
       setActionError(err);
     }
@@ -69,14 +66,14 @@ export default function JobsPage() {
     setActionError(null);
     try {
       await api(`/api/jobs/${id}`, { method: "DELETE" });
-      setJobs((current) => current.filter((job) => job.id !== id));
+      reload();
     } catch (err) {
       setActionError(err);
     }
   }
 
   if (error) return <ErrorMessage error={error} />;
-  if (!clients || !jobs) return <Loading />;
+  if (!clients || !result) return <Loading />;
 
   return (
     <div className="space-y-8">
@@ -100,7 +97,10 @@ export default function JobsPage() {
             Status{" "}
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={(event) => {
+                setStatus(event.target.value);
+                setPage(1);
+              }}
               className="rounded border border-slate-300 bg-white px-2 py-1"
             >
               <option value="">All</option>
@@ -113,7 +113,10 @@ export default function JobsPage() {
             Paid{" "}
             <select
               value={paid}
-              onChange={(event) => setPaid(event.target.value)}
+              onChange={(event) => {
+                setPaid(event.target.value);
+                setPage(1);
+              }}
               className="rounded border border-slate-300 bg-white px-2 py-1"
             >
               <option value="">All</option>
@@ -124,12 +127,13 @@ export default function JobsPage() {
         </div>
         <ErrorMessage error={actionError} />
         <JobList
-          jobs={jobs}
+          jobs={result.items}
           showClient
           onUpdate={updateJob}
           onDelete={deleteJob}
           empty={status || paid ? "No jobs match these filters." : "No jobs yet."}
         />
+        <Pagination page={result.page} pages={result.pages} onPage={setPage} />
       </section>
     </div>
   );

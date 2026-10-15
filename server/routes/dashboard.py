@@ -27,13 +27,13 @@ def dashboard():
         .options(joinedload(Job.client))
         .filter_by(user_id=user_id)
         .filter(Job.date >= start, Job.date <= end)
-        .order_by(Job.date, Job.time)
+        .order_by(Job.date, Job.time, Job.id)
     ).unique().all()
     unpaid_jobs = db.session.scalars(
         db.select(Job)
         .options(joinedload(Job.client))
         .filter_by(user_id=user_id, paid=False)
-        .order_by(Job.date, Job.time)
+        .order_by(Job.date, Job.time, Job.id)
     ).unique().all()
     return jsonify(
         week_start=start.isoformat(),

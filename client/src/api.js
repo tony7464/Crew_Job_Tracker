@@ -24,3 +24,13 @@ export async function api(path, { method = "GET", body, skipAuth = false } = {})
   }
   return data;
 }
+
+export async function fetchAll(path) {
+  const first = await api(`${path}?per_page=50`);
+  const items = [...first.items];
+  for (let page = 2; page <= first.pages; page += 1) {
+    const next = await api(`${path}?per_page=50&page=${page}`);
+    items.push(...next.items);
+  }
+  return items;
+}

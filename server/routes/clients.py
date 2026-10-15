@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, session
 
 from ..models import Client, db
+from ..pagination import paginate
 from ..schemas import ClientSchema
 from . import login_required
 
@@ -18,10 +19,12 @@ def owned_client(client_id):
 @bp.get("/clients")
 @login_required
 def list_clients():
-    clients = db.session.scalars(
-        db.select(Client).filter_by(user_id=session["user_id"])
-    ).all()
-    return jsonify(clients_schema.dump(clients))
+    stmt = (
+        db.select(Client)
+        .filter_by(user_id=session["user_id"])
+        .order_by(Client.name, Client.id)
+    )
+    return jsonify(paginate(stmt, clients_schema))
 
 
 @bp.post("/clients")
