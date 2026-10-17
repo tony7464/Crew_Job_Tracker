@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, fetchAll } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
@@ -17,6 +17,8 @@ export default function JobsPage() {
   const [status, setStatus] = useState("");
   const [paid, setPaid] = useState("");
   const [actionError, setActionError] = useState(null);
+  const [pending, setPending] = useState({});
+  const pendingKeys = useRef(new Set());
   const query = [status && `status=${status}`, paid && `paid=${paid}`].filter(Boolean).join("&");
   const clientsState = useAsync(fetchAll, "/api/clients");
   const jobsState = usePaged("/api/jobs", query);
@@ -33,10 +35,43 @@ export default function JobsPage() {
     jobsState.reset();
   }
 
-  async function changeJob(id, method, body) {
+  async function updateJob(id, patch) {
+    const key = `${id}:${Object.keys(patch)[0]}`;
+    if (pendingKeys.current.has(key)) return;
+    const existing = jobsState.result.items.find((job) => job.id === id);
+    if (!existing) return;
+    const previous = Object.fromEntries(Object.keys(patch).map((field) => [field, existing[field]]));
+    pendingKeys.current.add(key);
+    setPending((current) => ({ ...current, [key]: true }));
+    setActionError(null);
+    // Optimistic update: show the new value immediately, then roll back if the save fails.
+    jobsState.setResult((current) => ({
+      ...current,
+      items: current.items.map((job) => (job.id === id ? { ...job, ...patch } : job)),
+    }));
+    try {
+      await api(`/api/jobs/${id}`, { method: "PATCH", body: patch });
+      jobsState.reload();
+    } catch (err) {
+      jobsState.setResult((current) => ({
+        ...current,
+        items: current.items.map((job) => (job.id === id ? { ...job, ...previous } : job)),
+      }));
+      setActionError(err);
+    } finally {
+      pendingKeys.current.delete(key);
+      setPending((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    }
+  }
+
+  async function deleteJob(id) {
     setActionError(null);
     try {
-      await api(`/api/jobs/${id}`, { method, body });
+      await api(`/api/jobs/${id}`, { method: "DELETE" });
       jobsState.reload();
     } catch (err) {
       setActionError(err);
@@ -75,8 +110,9 @@ export default function JobsPage() {
         <JobList
           jobs={jobsState.result.items}
           showClient
-          onUpdate={(id, patch) => changeJob(id, "PATCH", patch)}
-          onDelete={(id) => changeJob(id, "DELETE")}
+          onUpdate={updateJob}
+          onDelete={deleteJob}
+          pending={pending}
           empty={status || paid ? "No jobs match these filters." : "No jobs yet."}
         />
         <Pagination page={jobsState.result.page} pages={jobsState.result.pages} onPage={jobsState.setPage} />

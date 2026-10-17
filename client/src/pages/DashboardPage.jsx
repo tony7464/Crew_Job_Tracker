@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
@@ -32,35 +32,62 @@ function totalsFor(weekJobs, unpaidJobs) {
   };
 }
 
+function applyJobChange(current, id, patch) {
+  const existing = current.week_jobs.find((job) => job.id === id)
+    || current.unpaid_jobs.find((job) => job.id === id);
+  if (!existing) return current;
+  const updated = { ...existing, ...patch };
+  const weekJobs = current.week_jobs.map((job) => (job.id === id ? updated : job));
+  const listed = current.unpaid_jobs.some((job) => job.id === id);
+  let unpaidJobs;
+  if (updated.paid) {
+    unpaidJobs = current.unpaid_jobs.filter((job) => job.id !== id);
+  } else if (listed) {
+    unpaidJobs = current.unpaid_jobs.map((job) => (job.id === id ? updated : job));
+  } else {
+    // A job that was paid is unpaid again, so put it back in schedule order.
+    unpaidJobs = [...current.unpaid_jobs, updated].sort(bySchedule);
+  }
+  return {
+    ...current,
+    week_jobs: weekJobs,
+    unpaid_jobs: unpaidJobs,
+    totals: totalsFor(weekJobs, unpaidJobs),
+  };
+}
+
 export default function DashboardPage() {
   const { data, setData, error } = useAsync(api, "/api/dashboard");
   const [actionError, setActionError] = useState(null);
+  const [pending, setPending] = useState({});
+  const pendingKeys = useRef(new Set());
 
   async function updateJob(id, patch) {
+    const key = `${id}:${Object.keys(patch)[0]}`;
+    if (pendingKeys.current.has(key)) return;
+    const existing = data.week_jobs.find((job) => job.id === id)
+      || data.unpaid_jobs.find((job) => job.id === id);
+    if (!existing) return;
+    const previous = Object.fromEntries(Object.keys(patch).map((field) => [field, existing[field]]));
+    pendingKeys.current.add(key);
+    setPending((current) => ({ ...current, [key]: true }));
     setActionError(null);
+    // Optimistic update: show the new value immediately, then roll back if the save fails.
+    setData((current) => applyJobChange(current, id, patch));
     try {
       const updated = await api(`/api/jobs/${id}`, { method: "PATCH", body: patch });
-      setData((current) => {
-        const weekJobs = current.week_jobs.map((job) => (job.id === id ? updated : job));
-        const listed = current.unpaid_jobs.some((job) => job.id === id);
-        let unpaidJobs;
-        if (updated.paid) {
-          unpaidJobs = current.unpaid_jobs.filter((job) => job.id !== id);
-        } else if (listed) {
-          unpaidJobs = current.unpaid_jobs.map((job) => (job.id === id ? updated : job));
-        } else {
-          // A job that was paid is unpaid again, so put it back in schedule order.
-          unpaidJobs = [...current.unpaid_jobs, updated].sort(bySchedule);
-        }
-        return {
-          ...current,
-          week_jobs: weekJobs,
-          unpaid_jobs: unpaidJobs,
-          totals: totalsFor(weekJobs, unpaidJobs),
-        };
-      });
+      const confirmed = Object.fromEntries(Object.keys(patch).map((field) => [field, updated[field]]));
+      setData((current) => applyJobChange(current, id, confirmed));
     } catch (err) {
+      setData((current) => applyJobChange(current, id, previous));
       setActionError(err);
+    } finally {
+      pendingKeys.current.delete(key);
+      setPending((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
     }
   }
 
@@ -86,14 +113,14 @@ export default function DashboardPage() {
       <ErrorMessage error={actionError} />
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Schedule</h2>
-        <WeekSchedule jobs={data.week_jobs} onUpdate={updateJob} />
+        <WeekSchedule jobs={data.week_jobs} onUpdate={updateJob} pending={pending} />
       </section>
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Unpaid</h2>
         {data.unpaid_jobs.length === 0 ? (
           <p className="text-slate-500">No unpaid jobs.</p>
         ) : (
-          <JobList jobs={data.unpaid_jobs} showClient onUpdate={updateJob} />
+          <JobList jobs={data.unpaid_jobs} showClient onUpdate={updateJob} pending={pending} />
         )}
       </section>
     </div>

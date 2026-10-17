@@ -60,7 +60,7 @@ export function usePaged(path, query = "") {
     else reload();
   }
 
-  return { page, setPage, result, error, reload, reset };
+  return { page, setPage, result, setResult, error, reload, reset };
 }
 
 export function useSubmit(onSubmit, resetOnSuccess) {

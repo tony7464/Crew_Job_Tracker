@@ -1,7 +1,7 @@
 import { formatDay } from "../utils/format";
 import JobList from "./JobList";
 
-export default function WeekSchedule({ jobs, onUpdate }) {
+export default function WeekSchedule({ jobs, onUpdate, pending }) {
   if (!jobs.length) {
     return <p className="text-slate-500">No jobs this week.</p>;
   }
@@ -18,7 +18,7 @@ export default function WeekSchedule({ jobs, onUpdate }) {
       {days.map((day) => (
         <section key={day.date}>
           <h3 className="mb-2 text-sm font-medium text-slate-500">{formatDay(day.date, "long")}</h3>
-          <JobList jobs={day.jobs} showClient onUpdate={onUpdate} />
+          <JobList jobs={day.jobs} showClient onUpdate={onUpdate} pending={pending} />
         </section>
       ))}
     </div>

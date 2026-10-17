@@ -3,13 +3,15 @@ import { Link } from "react-router-dom";
 import { formatMoney, formatTime, STATUSES } from "../utils/format";
 import MapLink from "./MapLink";
 
+const NO_PENDING = {};
+
 const badgeClass = {
   scheduled: "bg-sky-100 text-sky-800",
   completed: "bg-emerald-100 text-emerald-800",
   cancelled: "bg-slate-200 text-slate-600",
 };
 
-export default function JobList({ jobs, showClient = false, onUpdate, onDelete, empty = "No jobs yet." }) {
+export default function JobList({ jobs, showClient = false, onUpdate, onDelete, pending = NO_PENDING, empty = "No jobs yet." }) {
   const [confirmId, setConfirmId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -54,8 +56,9 @@ export default function JobList({ jobs, showClient = false, onUpdate, onDelete, 
                 <select
                   aria-label={`Status for ${job.service_type}`}
                   value={job.status}
+                  disabled={Boolean(pending[`${job.id}:status`])}
                   onChange={(event) => onUpdate(job.id, { status: event.target.value })}
-                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm"
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm disabled:opacity-60"
                 >
                   {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
@@ -63,7 +66,9 @@ export default function JobList({ jobs, showClient = false, onUpdate, onDelete, 
                   <input
                     type="checkbox"
                     checked={job.paid}
+                    disabled={Boolean(pending[`${job.id}:paid`])}
                     onChange={(event) => onUpdate(job.id, { paid: event.target.checked })}
+                    className="disabled:opacity-60"
                   />
                   Paid
                 </label>
