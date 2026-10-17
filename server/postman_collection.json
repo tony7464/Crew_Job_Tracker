@@ -922,6 +922,32 @@
       ]
     },
     {
+      "name": "Dashboard totals",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/dashboard"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200', () => pm.response.to.have.status(200));",
+              "const totals = pm.response.json().totals;",
+              "pm.test('totals are numbers', () => {",
+              "  pm.expect(totals).to.be.an('object');",
+              "  ['week_scheduled', 'week_completed', 'unpaid_total', 'paid_this_week'].forEach((key) => {",
+              "    pm.expect(totals).to.have.property(key);",
+              "    pm.expect(totals[key]).to.be.a('number');",
+              "  });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Get job",
       "request": {
         "method": "GET",

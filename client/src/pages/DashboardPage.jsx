@@ -5,10 +5,31 @@ import JobList from "../components/JobList";
 import Loading from "../components/Loading";
 import WeekSchedule from "../components/WeekSchedule";
 import { useAsync } from "../hooks";
-import { formatDay } from "../utils/format";
+import { formatDay, formatMoney } from "../utils/format";
+
+const TOTAL_CARDS = [
+  ["week_scheduled", "Scheduled this week"],
+  ["week_completed", "Completed this week"],
+  ["unpaid_total", "Unpaid"],
+  ["paid_this_week", "Paid this week"],
+];
 
 function bySchedule(a, b) {
   return a.date.localeCompare(b.date) || a.time.localeCompare(b.time) || a.id - b.id;
+}
+
+function sumPrices(jobs) {
+  return jobs.reduce((total, job) => total + Number(job.price), 0);
+}
+
+function totalsFor(weekJobs, unpaidJobs) {
+  const activeWeek = weekJobs.filter((job) => job.status !== "cancelled");
+  return {
+    week_scheduled: sumPrices(activeWeek),
+    week_completed: sumPrices(weekJobs.filter((job) => job.status === "completed")),
+    unpaid_total: sumPrices(unpaidJobs.filter((job) => job.status !== "cancelled")),
+    paid_this_week: sumPrices(activeWeek.filter((job) => job.paid)),
+  };
 }
 
 export default function DashboardPage() {
@@ -31,7 +52,12 @@ export default function DashboardPage() {
           // A job that was paid is unpaid again, so put it back in schedule order.
           unpaidJobs = [...current.unpaid_jobs, updated].sort(bySchedule);
         }
-        return { ...current, week_jobs: weekJobs, unpaid_jobs: unpaidJobs };
+        return {
+          ...current,
+          week_jobs: weekJobs,
+          unpaid_jobs: unpaidJobs,
+          totals: totalsFor(weekJobs, unpaidJobs),
+        };
       });
     } catch (err) {
       setActionError(err);
@@ -48,6 +74,14 @@ export default function DashboardPage() {
         <p className="mt-1 text-sm text-slate-500">
           {formatDay(data.week_start)} – {formatDay(data.week_end)}
         </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {TOTAL_CARDS.map(([key, label]) => (
+          <div key={key} className="card">
+            <p className="text-sm text-slate-500">{label}</p>
+            <p className="mt-1 text-xl font-semibold">{formatMoney(data.totals[key])}</p>
+          </div>
+        ))}
       </div>
       <ErrorMessage error={actionError} />
       <section className="space-y-3">
