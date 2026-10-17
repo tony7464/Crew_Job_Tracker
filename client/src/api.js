@@ -30,12 +30,12 @@ export async function api(path, { method = "GET", body, skipAuth = false } = {})
   if (!response.ok) {
     const error = new Error(messageFrom(data));
     error.status = response.status;
-    error.errors = data.errors;
     throw error;
   }
   return data;
 }
 
+// per_page 50 is the API maximum, so a short list is one request.
 export async function fetchAll(path) {
   const first = await api(`${path}?per_page=50`);
   const items = [...first.items];

@@ -1,40 +1,17 @@
-import { useEffect, useState } from "react";
 import { api } from "../api";
 import ClientForm from "../components/ClientForm";
 import ClientList from "../components/ClientList";
 import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
+import { usePaged } from "../hooks";
 
 export default function ClientsPage() {
-  const [page, setPage] = useState(1);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    api(`/api/clients?page=${page}`)
-      .then((data) => {
-        if (cancelled) return;
-        if (data.items.length === 0 && page > 1) {
-          setPage(page - 1);
-          return;
-        }
-        setResult(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [page, reloadKey]);
+  const { setPage, result, error, reset } = usePaged("/api/clients");
 
   async function createClient(body) {
     await api("/api/clients", { method: "POST", body });
-    if (page !== 1) setPage(1);
-    else setReloadKey((key) => key + 1);
+    reset();
   }
 
   if (error) return <ErrorMessage error={error} />;

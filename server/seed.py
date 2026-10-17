@@ -2,6 +2,7 @@ from datetime import date, time, timedelta
 
 from .app import app, bcrypt
 from .models import Client, Job, User, db
+from .schemas import STATUSES
 
 CLIENTS = (
     ("Maple Ave", "10 Maple Ave", "555-0101", "Gate code 1111"),
@@ -11,7 +12,6 @@ CLIENTS = (
     ("Elm Drive", "14 Elm Dr", "555-0105", "Side door"),
 )
 SERVICES = ("Windows", "Janitorial", "Gutters")
-STATUSES = ("scheduled", "completed", "cancelled")
 
 
 def main():
@@ -28,46 +28,34 @@ def main():
         db.session.add(user)
         db.session.flush()
 
-        clients = []
-        for name, address, phone, notes in CLIENTS:
-            client = Client(
-                name=name,
-                address=address,
-                phone=phone,
-                notes=notes,
-                user_id=user.id,
-            )
-            db.session.add(client)
-            clients.append(client)
+        clients = [
+            Client(name=name, address=address, phone=phone, notes=notes, user_id=user.id)
+            for name, address, phone, notes in CLIENTS
+        ]
+        db.session.add_all(clients)
         db.session.flush()
 
         today = date.today()
         monday = today - timedelta(days=today.weekday())
-        weeks = (
-            monday - timedelta(days=7),
-            monday,
-            monday + timedelta(days=7),
-        )
-        count = 0
-        for week_start in weeks:
-            for day in range(5):
-                client = clients[count % len(clients)]
-                job = Job(
-                    date=week_start + timedelta(days=day),
+        jobs = []
+        for count in range(15):
+            week_start = monday + timedelta(days=(count // 5 - 1) * 7)
+            jobs.append(
+                Job(
+                    date=week_start + timedelta(days=count % 5),
                     time=time(8 + (count % 8), 0 if count % 2 == 0 else 30),
-                    service_type=SERVICES[count % len(SERVICES)],
-                    status=STATUSES[count % len(STATUSES)],
+                    service_type=SERVICES[count % 3],
+                    status=STATUSES[count % 3],
                     price=75 + count * 10,
                     paid=count % 2 == 0,
                     notes=None,
-                    client_id=client.id,
+                    client_id=clients[count % len(clients)].id,
                     user_id=user.id,
                 )
-                db.session.add(job)
-                count += 1
-
+            )
+        db.session.add_all(jobs)
         db.session.commit()
-        print(f"Seeded user demo with {len(clients)} clients and {count} jobs")
+        print(f"Seeded user demo with {len(clients)} clients and {len(jobs)} jobs")
 
 
 if __name__ == "__main__":

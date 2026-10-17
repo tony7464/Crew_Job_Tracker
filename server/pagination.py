@@ -21,6 +21,7 @@ def page_args(default_per_page=10, max_per_page=50):
 
 def paginate(stmt, schema):
     page, per_page = page_args()
+    # Drop ORDER BY so the count subquery is valid on Postgres.
     total = db.session.scalar(
         select(func.count()).select_from(stmt.order_by(None).subquery())
     ) or 0

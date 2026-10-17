@@ -12,30 +12,23 @@ job_schema = JobSchema()
 jobs_schema = JobSchema(many=True)
 
 
-def owned_jobs():
-    return (
+@bp.get("/jobs")
+@login_required
+def list_jobs():
+    stmt = (
         db.select(Job)
         .options(joinedload(Job.client))
         .filter_by(user_id=session["user_id"])
         .order_by(Job.date, Job.time, Job.id)
     )
-
-
-@bp.get("/jobs")
-@login_required
-def list_jobs():
-    stmt = owned_jobs()
     status = request.args.get("status")
     if status in STATUSES:
         stmt = stmt.filter_by(status=status)
     paid = request.args.get("paid")
-    if paid is not None and paid != "":
-        if paid == "true":
-            stmt = stmt.filter_by(paid=True)
-        elif paid == "false":
-            stmt = stmt.filter_by(paid=False)
-        else:
+    if paid not in (None, ""):
+        if paid not in ("true", "false"):
             raise QueryParamError("paid", "Must be true or false.")
+        stmt = stmt.filter_by(paid=paid == "true")
     return jsonify(paginate(stmt, jobs_schema))
 
 

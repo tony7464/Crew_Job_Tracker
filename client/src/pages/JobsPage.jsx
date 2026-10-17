@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, fetchAll } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
@@ -6,79 +6,49 @@ import JobForm from "../components/JobForm";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
+import { useAsync, usePaged } from "../hooks";
+import { STATUSES, statusLabel } from "../utils/format";
+
+const selectClass = "rounded border border-slate-300 bg-white px-2 py-1";
 
 export default function JobsPage() {
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client");
-  const [clients, setClients] = useState(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [actionError, setActionError] = useState(null);
   const [status, setStatus] = useState("");
   const [paid, setPaid] = useState("");
-  const [page, setPage] = useState(1);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [actionError, setActionError] = useState(null);
+  const query = [status && `status=${status}`, paid && `paid=${paid}`].filter(Boolean).join("&");
+  const clientsState = useAsync(fetchAll, "/api/clients");
+  const jobsState = usePaged("/api/jobs", query);
 
-  useEffect(() => {
-    fetchAll("/api/clients")
-      .then(setClients)
-      .catch(setError);
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams({ page: String(page) });
-    if (status) params.set("status", status);
-    if (paid) params.set("paid", paid);
-    let cancelled = false;
-    api(`/api/jobs?${params}`)
-      .then((data) => {
-        if (cancelled) return;
-        if (data.items.length === 0 && page > 1) {
-          setPage(page - 1);
-          return;
-        }
-        setResult(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err);
-      });
-    return () => {
-      cancelled = true;
+  function pick(setter) {
+    return (value) => {
+      setter(value);
+      jobsState.setPage(1);
     };
-  }, [status, paid, page, reloadKey]);
-
-  function reload() {
-    setReloadKey((key) => key + 1);
   }
 
   async function createJob(body) {
     await api("/api/jobs", { method: "POST", body });
-    if (page !== 1) setPage(1);
-    else reload();
+    jobsState.reset();
   }
 
-  async function updateJob(id, patch) {
+  async function changeJob(id, method, body) {
     setActionError(null);
     try {
-      await api(`/api/jobs/${id}`, { method: "PATCH", body: patch });
-      reload();
+      await api(`/api/jobs/${id}`, { method, body });
+      jobsState.reload();
     } catch (err) {
       setActionError(err);
     }
   }
 
-  async function deleteJob(id) {
-    setActionError(null);
-    try {
-      await api(`/api/jobs/${id}`, { method: "DELETE" });
-      reload();
-    } catch (err) {
-      setActionError(err);
-    }
-  }
-
+  const error = clientsState.error || jobsState.error;
   if (error) return <ErrorMessage error={error} />;
-  if (!clients || !result) return <Loading />;
+  if (!clientsState.data || !jobsState.result) return <Loading />;
+
+  const statusOptions = [["", "All"], ...STATUSES.map((item) => [item, statusLabel(item)])];
+  const paidOptions = [["", "All"], ["true", "Paid"], ["false", "Unpaid"]];
 
   return (
     <div className="space-y-8">
@@ -88,7 +58,7 @@ export default function JobsPage() {
           <h2 className="font-medium">Schedule a job</h2>
           <div className="mt-4">
             <JobForm
-              clients={clients}
+              clients={clientsState.data}
               initial={presetClient ? { client_id: presetClient } : null}
               onSubmit={createJob}
               submitLabel="Add job"
@@ -98,48 +68,32 @@ export default function JobsPage() {
       </section>
       <section className="space-y-4">
         <div className="flex flex-wrap gap-3">
-          <label className="text-sm">
-            Status{" "}
-            <select
-              value={status}
-              onChange={(event) => {
-                setStatus(event.target.value);
-                setPage(1);
-              }}
-              className="rounded border border-slate-300 bg-white px-2 py-1"
-            >
-              <option value="">All</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </label>
-          <label className="text-sm">
-            Paid{" "}
-            <select
-              value={paid}
-              onChange={(event) => {
-                setPaid(event.target.value);
-                setPage(1);
-              }}
-              className="rounded border border-slate-300 bg-white px-2 py-1"
-            >
-              <option value="">All</option>
-              <option value="true">Paid</option>
-              <option value="false">Unpaid</option>
-            </select>
-          </label>
+          <Filter label="Status" value={status} onChange={pick(setStatus)} options={statusOptions} />
+          <Filter label="Paid" value={paid} onChange={pick(setPaid)} options={paidOptions} />
         </div>
         <ErrorMessage error={actionError} />
         <JobList
-          jobs={result.items}
+          jobs={jobsState.result.items}
           showClient
-          onUpdate={updateJob}
-          onDelete={deleteJob}
+          onUpdate={(id, patch) => changeJob(id, "PATCH", patch)}
+          onDelete={(id) => changeJob(id, "DELETE")}
           empty={status || paid ? "No jobs match these filters." : "No jobs yet."}
         />
-        <Pagination page={result.page} pages={result.pages} onPage={setPage} />
+        <Pagination page={jobsState.result.page} pages={jobsState.result.pages} onPage={jobsState.setPage} />
       </section>
     </div>
+  );
+}
+
+function Filter({ label, value, onChange, options }) {
+  return (
+    <label className="text-sm">
+      {label}{" "}
+      <select value={value} onChange={(event) => onChange(event.target.value)} className={selectClass}>
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>{optionLabel}</option>
+        ))}
+      </select>
+    </label>
   );
 }

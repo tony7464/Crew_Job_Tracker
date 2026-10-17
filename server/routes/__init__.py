@@ -21,7 +21,5 @@ def register_routes(app):
     from .dashboard import bp as dashboard_bp
     from .jobs import bp as jobs_bp
 
-    app.register_blueprint(auth_bp, url_prefix="/api")
-    app.register_blueprint(clients_bp, url_prefix="/api")
-    app.register_blueprint(dashboard_bp, url_prefix="/api")
-    app.register_blueprint(jobs_bp, url_prefix="/api")
+    for blueprint in (auth_bp, clients_bp, dashboard_bp, jobs_bp):
+        app.register_blueprint(blueprint, url_prefix="/api")

@@ -1,84 +1,42 @@
-import { useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import ErrorMessage from "../components/ErrorMessage";
-import Loading from "../components/Loading";
+import { Link } from "react-router-dom";
+import AuthScreen from "../components/AuthScreen";
+import { Input } from "../components/Field";
 import { useAuth } from "../context/useAuth";
 
 export default function SignupPage() {
-  const { user, loading, signup } = useAuth();
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  if (loading) return <Loading />;
-  if (user) return <Navigate to="/dashboard" replace />;
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    setSubmitting(true);
-    setError(null);
-    try {
-      await signup({
-        username: form.get("username"),
-        email: form.get("email"),
-        password: form.get("password"),
-      });
-    } catch (err) {
-      setError(err);
-      setSubmitting(false);
-    }
-  }
+  const { signup } = useAuth();
 
   return (
-    <section className="mx-auto max-w-sm">
-      <h1 className="text-2xl font-semibold">Sign up</h1>
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <label className="block text-sm font-medium">
-          Username
-          <input
-            name="username"
-            autoComplete="username"
-            required
-            className="field"
-          />
-        </label>
-        <label className="block text-sm font-medium">
-          Email
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="field"
-          />
-        </label>
-        <label className="block text-sm font-medium">
-          Password
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="field"
-          />
-        </label>
-        <p className="text-sm text-slate-500">At least 8 characters.</p>
-        <ErrorMessage error={error} />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="btn w-full"
-        >
-          Create account
-        </button>
-      </form>
-      <p className="mt-4 text-sm text-slate-600">
-        Already have an account?{" "}
-        <Link to="/login" className="text-sky-800 hover:underline">
-          Log in
-        </Link>
-      </p>
-    </section>
+    <AuthScreen
+      title="Sign up"
+      submitLabel="Create account"
+      onSubmit={(form) =>
+        signup({
+          username: form.get("username"),
+          email: form.get("email"),
+          password: form.get("password"),
+        })
+      }
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link to="/login" className="text-sky-800 hover:underline">
+            Log in
+          </Link>
+        </>
+      }
+    >
+      <Input label="Username" name="username" autoComplete="username" required />
+      <Input label="Email" name="email" type="email" autoComplete="email" required />
+      <Input
+        label="Password"
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        required
+        minLength={8}
+      />
+      <p className="text-sm text-slate-500">At least 8 characters.</p>
+    </AuthScreen>
   );
 }

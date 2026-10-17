@@ -11,6 +11,14 @@ import JobsPage from "./pages/JobsPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 
+const PRIVATE = [
+  ["/dashboard", DashboardPage],
+  ["/jobs", JobsPage],
+  ["/jobs/:id", JobDetail],
+  ["/clients", ClientsPage],
+  ["/clients/:id", ClientDetail],
+];
+
 function Home() {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
@@ -26,46 +34,17 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/jobs"
-            element={
-              <ProtectedRoute>
-                <JobsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/jobs/:id"
-            element={
-              <ProtectedRoute>
-                <JobDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/clients"
-            element={
-              <ProtectedRoute>
-                <ClientsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/clients/:id"
-            element={
-              <ProtectedRoute>
-                <ClientDetail />
-              </ProtectedRoute>
-            }
-          />
+          {PRIVATE.map(([path, Page]) => (
+            <Route
+              key={path}
+              path={path}
+              element={
+                <ProtectedRoute>
+                  <Page />
+                </ProtectedRoute>
+              }
+            />
+          ))}
         </Routes>
       </main>
     </div>

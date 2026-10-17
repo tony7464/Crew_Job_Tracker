@@ -1,17 +1,22 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 
+const LINKS = [
+  ["/dashboard", "Dashboard"],
+  ["/jobs", "Jobs"],
+  ["/clients", "Clients"],
+];
+
 export default function NavBar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
-
-  const navClass = ({ isActive }) =>
-    isActive ? "font-medium text-sky-800" : "hover:underline";
 
   async function handleLogout() {
     await logout();
     navigate("/login");
   }
+
+  const itemClass = ({ isActive }) => (isActive ? "font-medium text-sky-800" : "hover:underline");
 
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-white">
@@ -23,24 +28,11 @@ export default function NavBar() {
           <nav className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
             {user ? (
               <>
-                <NavLink
-                  to="/dashboard"
-                  className={navClass}
-                >
-                  Dashboard
-                </NavLink>
-                <NavLink
-                  to="/jobs"
-                  className={navClass}
-                >
-                  Jobs
-                </NavLink>
-                <NavLink
-                  to="/clients"
-                  className={navClass}
-                >
-                  Clients
-                </NavLink>
+                {LINKS.map(([to, label]) => (
+                  <NavLink key={to} to={to} className={itemClass}>
+                    {label}
+                  </NavLink>
+                ))}
                 <span className="text-slate-500">{user.username}</span>
                 <button type="button" onClick={handleLogout} className="hover:underline">
                   Log out
@@ -48,12 +40,8 @@ export default function NavBar() {
               </>
             ) : (
               <>
-                <Link to="/login" className="hover:underline">
-                  Log in
-                </Link>
-                <Link to="/signup" className="hover:underline">
-                  Sign up
-                </Link>
+                <Link to="/login" className="hover:underline">Log in</Link>
+                <Link to="/signup" className="hover:underline">Sign up</Link>
               </>
             )}
           </nav>

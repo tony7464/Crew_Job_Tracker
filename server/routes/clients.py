@@ -14,11 +14,7 @@ clients_schema = ClientSchema(many=True, exclude=("jobs",))
 @bp.get("/clients")
 @login_required
 def list_clients():
-    stmt = (
-        db.select(Client)
-        .filter_by(user_id=session["user_id"])
-        .order_by(Client.name, Client.id)
-    )
+    stmt = db.select(Client).filter_by(user_id=session["user_id"]).order_by(Client.name, Client.id)
     return jsonify(paginate(stmt, clients_schema))
 
 

@@ -27,6 +27,7 @@ def database_uri():
     url = os.environ.get("DATABASE_URL")
     if url:
         scheme, separator, rest = url.partition("://")
+        # SQLAlchemy needs the psycopg2 driver named in the URL.
         if separator and "+" not in scheme and scheme in {"postgres", "postgresql"}:
             return "postgresql+psycopg2://" + rest
         return url
@@ -106,6 +107,7 @@ def register_frontend(app):
         if relative:
             root = os.path.normpath(CLIENT_DIST)
             requested = os.path.normpath(os.path.join(root, relative))
+            # Reject paths that climb out of the built client folder.
             inside_dist = requested == root or requested.startswith(root + os.sep)
             if inside_dist and os.path.isfile(requested):
                 return send_from_directory(CLIENT_DIST, relative)

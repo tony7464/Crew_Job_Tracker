@@ -12,20 +12,16 @@ login_schema = LoginSchema()
 user_schema = UserSchema()
 
 
-def _user_by_username(username):
-    return db.session.scalar(
-        db.select(User).where(func.lower(User.username) == username.lower())
-    )
+def _user_by(column, value):
+    return db.session.scalar(db.select(User).where(func.lower(column) == value.lower()))
 
 
 @bp.post("/signup")
 def signup():
     data = signup_schema.load(request.get_json(silent=True) or {})
-    if _user_by_username(data["username"]):
+    if _user_by(User.username, data["username"]):
         return jsonify(errors={"username": ["Username already taken"]}), 400
-    if db.session.scalar(
-        db.select(User).where(func.lower(User.email) == data["email"].lower())
-    ):
+    if _user_by(User.email, data["email"]):
         return jsonify(errors={"email": ["Email already taken"]}), 400
     user = User(
         username=data["username"],
@@ -42,7 +38,7 @@ def signup():
 @bp.post("/login")
 def login():
     data = login_schema.load(request.get_json(silent=True) or {})
-    user = _user_by_username(data["username"])
+    user = _user_by(User.username, data["username"])
     if not user or not bcrypt.check_password_hash(user.password_hash, data["password"]):
         return jsonify(errors={"auth": ["Invalid username or password"]}), 401
     session.permanent = True

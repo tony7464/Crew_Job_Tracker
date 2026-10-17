@@ -17,7 +17,7 @@ export default function Pagination({ page, pages, onPage }) {
       <button
         type="button"
         onClick={() => onPage(page + 1)}
-        disabled={pages === 0 || page >= pages}
+        disabled={page >= pages}
         className="rounded border border-slate-300 bg-white px-3 py-1 disabled:opacity-40"
       >
         Next

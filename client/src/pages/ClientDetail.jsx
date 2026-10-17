@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import ClientForm from "../components/ClientForm";
+import ConfirmDelete from "../components/ConfirmDelete";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
+import { useAsync } from "../hooks";
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -13,41 +14,10 @@ export default function ClientDetail() {
 
 function ClientDetailView({ id }) {
   const navigate = useNavigate();
-  const [client, setClient] = useState(null);
-  const [error, setError] = useState(null);
-  const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api(`/api/clients/${id}`)
-      .then((data) => {
-        if (!cancelled) setClient(data);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+  const { data: client, setData, error } = useAsync(api, `/api/clients/${id}`);
 
   async function save(body) {
-    const updated = await api(`/api/clients/${id}`, { method: "PATCH", body });
-    setClient(updated);
-  }
-
-  async function remove() {
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      await api(`/api/clients/${id}`, { method: "DELETE" });
-      navigate("/clients");
-    } catch (err) {
-      setDeleteError(err);
-      setDeleting(false);
-    }
+    setData(await api(`/api/clients/${id}`, { method: "PATCH", body }));
   }
 
   if (error?.status === 404) return <p>Client not found.</p>;
@@ -70,12 +40,7 @@ function ClientDetailView({ id }) {
       <section className="card">
         <h2 className="font-medium">Edit client</h2>
         <div className="mt-4">
-          <ClientForm
-            key={client.id}
-            initial={client}
-            onSubmit={save}
-            submitLabel="Save changes"
-          />
+          <ClientForm key={client.id} initial={client} onSubmit={save} submitLabel="Save changes" />
         </div>
       </section>
       <section>
@@ -89,35 +54,13 @@ function ClientDetailView({ id }) {
           <JobList jobs={client.jobs} />
         </div>
       </section>
-      <ErrorMessage error={deleteError} />
-      {confirming ? (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={remove}
-            disabled={deleting}
-            className="rounded border border-red-300 px-4 py-2 text-sm text-red-700 disabled:opacity-60"
-          >
-            {deleting ? "Deleting…" : "Confirm delete"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            disabled={deleting}
-            className="text-sm text-slate-600 hover:underline disabled:opacity-60"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="text-sm text-red-700 hover:underline"
-        >
-          Delete client
-        </button>
-      )}
+      <ConfirmDelete
+        label="Delete client"
+        onConfirm={async () => {
+          await api(`/api/clients/${id}`, { method: "DELETE" });
+          navigate("/clients");
+        }}
+      />
     </div>
   );
 }
