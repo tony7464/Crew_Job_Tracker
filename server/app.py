@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, request, send_from_directory
 from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from marshmallow import ValidationError
@@ -11,13 +11,16 @@ from marshmallow import ValidationError
 from .models import db
 from .pagination import QueryParamError
 
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+_SERVER_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_SERVER_DIR, ".env"))
 
 bcrypt = Bcrypt()
 migrate = Migrate()
 log = logging.getLogger(__name__)
 
 DEV_SECRET_KEY = "dev-only-insecure-key"
+CLIENT_DIST = os.path.abspath(os.path.join(_SERVER_DIR, "..", "client", "dist"))
+MIGRATIONS_DIR = os.path.join(_SERVER_DIR, "migrations")
 
 
 def database_uri():
@@ -56,7 +59,7 @@ def create_app():
     app.config["SESSION_COOKIE_SECURE"] = env_flag("SESSION_COOKIE_SECURE")
 
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, directory=MIGRATIONS_DIR)
     bcrypt.init_app(app)
 
     @app.errorhandler(ValidationError)
@@ -70,7 +73,47 @@ def create_app():
     from .routes import register_routes
 
     register_routes(app)
+    register_frontend(app)
     return app
+
+
+def _is_api_path(path):
+    return path == "/api" or path.startswith("/api/")
+
+
+def register_frontend(app):
+    """Serve the built React app. Unknown /api paths stay a JSON 404."""
+
+    @app.errorhandler(404)
+    def handle_not_found(_err):
+        if _is_api_path(request.path):
+            return {"error": "Not found"}, 404
+        index = os.path.join(CLIENT_DIST, "index.html")
+        if request.method in {"GET", "HEAD"} and os.path.isfile(index):
+            return send_from_directory(CLIENT_DIST, "index.html")
+        return {"error": "Not found"}, 404
+
+    @app.before_request
+    def serve_built_frontend():
+        if request.method not in {"GET", "HEAD"}:
+            return None
+        if _is_api_path(request.path):
+            return None
+        if not os.path.isdir(CLIENT_DIST):
+            return None
+
+        relative = request.path.lstrip("/")
+        if relative:
+            root = os.path.normpath(CLIENT_DIST)
+            requested = os.path.normpath(os.path.join(root, relative))
+            inside_dist = requested == root or requested.startswith(root + os.sep)
+            if inside_dist and os.path.isfile(requested):
+                return send_from_directory(CLIENT_DIST, relative)
+
+        index = os.path.join(CLIENT_DIST, "index.html")
+        if os.path.isfile(index):
+            return send_from_directory(CLIENT_DIST, "index.html")
+        return None
 
 
 app = create_app()

@@ -1,0 +1,9 @@
+{
+  "name": "crew-job-tracker",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "node scripts/run.mjs start",
+    "dev": "node scripts/run.mjs dev"
+  }
+}

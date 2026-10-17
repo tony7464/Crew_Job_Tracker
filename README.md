@@ -36,7 +36,18 @@ Client (`client/package.json`):
 
 ## Setup and run
 
-Python 3 and Node.js are required. PostgreSQL is required only if you point the API at it.
+Python 3.10 or newer and Node.js are required. PostgreSQL is required only if you point the API at it.
+
+From the project folder:
+
+```bash
+npm run setup
+npm start
+```
+
+Then open http://localhost:5000. The demo login is `demo` / `password123`. `npm run setup` creates a Python environment, installs dependencies, builds the website, and adds demo data when the database is empty. `npm start` serves the site and the API together. `npm run dev` runs the API and the Vite dev server, and Ctrl+C stops both.
+
+The steps below do the same work by hand.
 
 ### API with SQLite
 
