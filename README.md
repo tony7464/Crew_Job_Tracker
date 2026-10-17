@@ -2,6 +2,8 @@
 
 Crew Job Tracker is a simple app for owners of small cleaning and service businesses. It keeps clients, scheduled jobs, and unpaid work in one place, so you can stop tracking everything on paper and in text messages.
 
+Read the [project pitch](project1-pitch.pdf) for the problem, users, and plan.
+
 ## Screenshots
 
 ![Login](docs/screenshots/login.png)
