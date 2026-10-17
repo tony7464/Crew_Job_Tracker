@@ -44,6 +44,10 @@ class JobSchema(StrictSchema):
         lambda obj: obj.client.name if getattr(obj, "client", None) else None,
         dump_only=True,
     )
+    client_address = fields.Function(
+        lambda obj: obj.client.address if getattr(obj, "client", None) else None,
+        dump_only=True,
+    )
     user_id = fields.Int(dump_only=True)
 
 

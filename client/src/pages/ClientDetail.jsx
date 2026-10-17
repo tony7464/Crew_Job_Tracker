@@ -5,6 +5,7 @@ import ConfirmDelete from "../components/ConfirmDelete";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
+import MapLink from "../components/MapLink";
 import { useAsync } from "../hooks";
 
 export default function ClientDetail() {
@@ -32,7 +33,9 @@ function ClientDetailView({ id }) {
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{client.name}</h1>
         <dl className="mt-4 space-y-1 text-sm text-slate-700">
-          <div>Address: {client.address || "—"}</div>
+          <div>
+            Address: {client.address || "—"} <MapLink address={client.address} />
+          </div>
           <div>Phone: {client.phone || "—"}</div>
           <div>Notes: {client.notes || "—"}</div>
         </dl>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatMoney, formatTime, STATUSES } from "../utils/format";
+import MapLink from "./MapLink";
 
 const badgeClass = {
   scheduled: "bg-sky-100 text-sky-800",
@@ -42,6 +43,11 @@ export default function JobList({ jobs, showClient = false, onUpdate, onDelete, 
                 {job.date} {formatTime(job.time)} · {formatMoney(job.price)}
                 {job.paid ? " · Paid" : " · Unpaid"}
               </p>
+              {job.client_address?.trim() ? (
+                <p className="mt-1 text-sm text-slate-600">
+                  {job.client_address} <MapLink address={job.client_address} />
+                </p>
+              ) : null}
             </div>
             {onUpdate && (
               <div className="flex flex-wrap items-center gap-3">
