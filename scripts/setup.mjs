@@ -163,7 +163,7 @@ if (users === 0) {
 
 console.log("");
 console.log(
-  "Done! Run: npm start, then open http://localhost:5000  (demo login shown below)",
+  "Done! Run: npm start, then open http://localhost:5555  (demo login shown below)",
 );
 console.log("");
 console.log("  Username: demo");

@@ -25,7 +25,7 @@ npm run setup
 npm start
 ```
 
-Open http://localhost:5000 and sign in with username `demo` and password `password123`. Setup installs what the app needs and adds sample clients and jobs the first time the database is empty. Press Ctrl+C to stop the app.
+Open http://localhost:5555 and sign in with username `demo` and password `password123`. Setup installs what the app needs and adds sample clients and jobs the first time the database is empty. Press Ctrl+C to stop the app. The app uses port 5555 because macOS uses port 5000 for AirPlay Receiver.
 
 ## Features
 

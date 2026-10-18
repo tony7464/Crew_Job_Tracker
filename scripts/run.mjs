@@ -89,15 +89,15 @@ function startProcess(commandName, args, options = {}) {
 }
 
 const flaskEnv = { ...process.env, FLASK_APP: "server.app" };
-const flaskArgs = ["-m", "flask", "run", "--host", "127.0.0.1", "--port", "5000"];
+const flaskArgs = ["-m", "flask", "run", "--host", "127.0.0.1", "--port", "5555"];
 
 if (command === "start") {
-  console.log("Starting Crew Job Tracker at http://localhost:5000");
+  console.log("Starting Crew Job Tracker at http://localhost:5555");
   console.log("Demo login: demo / password123");
   console.log("Press Ctrl+C to stop.");
   startProcess(venvPython, flaskArgs, { env: flaskEnv });
 } else {
-  console.log("Starting the API at http://localhost:5000");
+  console.log("Starting the API at http://localhost:5555");
   console.log("Starting the website dev server. Vite will print its address.");
   console.log("Press Ctrl+C to stop both.");
   startProcess(venvPython, flaskArgs, { env: flaskEnv });
