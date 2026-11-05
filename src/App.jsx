@@ -1,0 +1,125 @@
+import { Suspense, lazy } from "react";
+import { Navigate, Route, Routes, useMatch } from "react-router-dom";
+import NavBar from "./components/NavBar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import VerifyEmailBanner from "./components/VerifyEmail";
+import Loading from "./components/Loading";
+import { useAuth } from "./context/useAuth";
+import AccountPage from "./pages/AccountPage";
+import CalendarPage from "./pages/CalendarPage";
+import ClientDetail from "./pages/ClientDetail";
+import ClientsPage from "./pages/ClientsPage";
+import DashboardPage from "./pages/DashboardPage";
+import EmployeesPage from "./pages/EmployeesPage";
+import JobDetail from "./pages/JobDetail";
+import JobsPage from "./pages/JobsPage";
+import LoginPage from "./pages/LoginPage";
+import MyJobDetail from "./pages/MyJobDetail";
+import MyJobsPage from "./pages/MyJobsPage";
+import PublicQuotePage from "./pages/PublicQuotePage";
+import PublicRequestPage from "./pages/PublicRequestPage";
+import QuoteDetail from "./pages/QuoteDetail";
+import QuotesPage from "./pages/QuotesPage";
+import RequestDetail from "./pages/RequestDetail";
+import RequestsPage from "./pages/RequestsPage";
+import SchedulePage from "./pages/SchedulePage";
+import SettingsPage from "./pages/SettingsPage";
+import SignupPage from "./pages/SignupPage";
+import { homePath } from "./utils/roles";
+
+// Loaded on first use, so the main bundle stays small; a client opening a pay link
+// also loads less.
+const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
+const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
+const MockCheckoutPage = lazy(() => import("./pages/MockCheckoutPage"));
+const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
+const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+
+// [path, page, who may visit]. See canVisit in utils/roles.js.
+const PRIVATE = [
+  ["/dashboard", DashboardPage, "owner"],
+  ["/schedule", SchedulePage, "team"],
+  ["/jobs", JobsPage, "owner"],
+  ["/jobs/:id", JobDetail, "owner"],
+  ["/employees", EmployeesPage, "owner"],
+  ["/clients", ClientsPage, "clients"],
+  ["/clients/:id", ClientDetail, "clients"],
+  ["/requests", RequestsPage, "requests"],
+  ["/requests/:id", RequestDetail, "requests"],
+  // Quotes are money, so owner-only. /quotes/new takes ?request_id= or ?client_id=.
+  ["/quotes", QuotesPage, "owner"],
+  ["/quotes/new", QuoteDetail, "owner"],
+  ["/quotes/:id", QuoteDetail, "owner"],
+  // Invoices are money too. They are made from a job or an accepted quote, on those pages.
+  ["/invoices", InvoicesPage, "owner"],
+  ["/invoices/:id", InvoiceDetail, "owner"],
+  ["/settings", SettingsPage, "owner"],
+  ["/my-jobs", MyJobsPage, "employee"],
+  ["/my-jobs/:id", MyJobDetail, "employee"],
+  ["/calendar", CalendarPage, "employee"],
+  ["/account", AccountPage, undefined],
+];
+
+function Home() {
+  const { user, loading } = useAuth();
+  if (loading) return <Loading />;
+  return <Navigate to={homePath(user)} replace />;
+}
+
+export default function App() {
+  // The public request form, quote page, and pay page are their own pages for clients: no menu, no login.
+  // So are the links we email: verifying an email, and an employee invite.
+  const publicForm = useMatch("/request/:token");
+  const publicQuote = useMatch("/quote/:token");
+  const publicPay = useMatch("/pay/:token/*");
+  const publicInvite = useMatch("/invite/:token");
+  const verifyEmail = useMatch("/verify-email");
+  if (publicForm || publicQuote || publicPay || publicInvite || verifyEmail) {
+    return (
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/request/:token" element={<PublicRequestPage />} />
+          <Route path="/quote/:token" element={<PublicQuotePage />} />
+          <Route path="/pay/:token" element={<PublicInvoicePage />} />
+          <Route path="/pay/:token/mock-checkout" element={<MockCheckoutPage />} />
+          <Route path="/invite/:token" element={<AcceptInvitePage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop"
+      >
+        Skip to content
+      </a>
+      <NavBar />
+      <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
+        <VerifyEmailBanner />
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            {PRIVATE.map(([path, Page, allow]) => (
+              <Route
+                key={path}
+                path={path}
+                element={
+                  <ProtectedRoute allow={allow}>
+                    <Page />
+                  </ProtectedRoute>
+                }
+              />
+            ))}
+          </Routes>
+        </Suspense>
+      </main>
+    </div>
+  );
+}
