@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
+import ChecklistCard from "../components/ChecklistCard";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
+import OnMyWayCard from "../components/OnMyWayCard";
+import SignatureCard from "../components/SignatureCard";
 import ClockCard from "../components/time/ClockCard";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
@@ -32,6 +35,7 @@ function MyJobDetailView({ id }) {
   const [notesKey, setNotesKey] = useState(0);
   const [afterCount, setAfterCount] = useState(null);
   const [photosEnabled, setPhotosEnabled] = useState(true);
+  const [checklist, setChecklist] = useState(null);
 
   async function markCompleted() {
     setSaving(true);
@@ -116,7 +120,9 @@ function MyJobDetailView({ id }) {
               )}
             </div>
           </Card>
+          <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ClockCard jobId={job.id} reloadKey={job.status} />
+          <ChecklistCard jobId={job.id} onChange={setChecklist} />
           <JobPhotos
             jobId={job.id}
             reloadKey={photosKey}
@@ -129,6 +135,11 @@ function MyJobDetailView({ id }) {
           />
           {job.status === "scheduled" ? (
             <div className="space-y-2">
+              {checklist && checklist.done < checklist.total && (
+                <p className="text-sm font-medium text-warning">
+                  {checklist.total - checklist.done} of {checklist.total} checklist steps are not ticked yet.
+                </p>
+              )}
               {afterCount === 0 && photosEnabled && (
                 <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
               )}
@@ -145,6 +156,7 @@ function MyJobDetailView({ id }) {
           )}
         </div>
         <div className="lg:col-span-2">
+          <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />
           <JobNotes
             jobId={job.id}
             reloadKey={notesKey}

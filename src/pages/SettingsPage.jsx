@@ -15,6 +15,7 @@ import { buttonClass } from "../components/ui/styles";
 import { useAuth } from "../context/useAuth";
 import { useAsync } from "../hooks";
 import SettingsPaymentsCard from "./SettingsPaymentsCard";
+import SettingsChecklistsCard from "./SettingsChecklistsCard";
 
 const PATH = "/api/business/request_form";
 // Same limits as the server.
@@ -304,9 +305,10 @@ function RequestFormCard() {
 export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Your business's request form and payments." />
+      <PageHeader title="Settings" description="Your business's request form, job checklists, and payments." />
       <div className="space-y-6">
         <RequestFormCard />
+        <SettingsChecklistsCard />
         <SettingsPaymentsCard />
       </div>
     </div>
