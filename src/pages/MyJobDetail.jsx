@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobNotes from "../components/JobNotes";
+import JobPhotos from "../components/JobPhotos";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
 import { PersonChips } from "../components/ui/Avatar";
@@ -25,6 +26,10 @@ function MyJobDetailView({ id }) {
   const { data: job, setData, error } = useAsync(api, `/api/jobs/${id}`);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [photosKey, setPhotosKey] = useState(0);
+  const [notesKey, setNotesKey] = useState(0);
+  const [afterCount, setAfterCount] = useState(null);
+  const [photosEnabled, setPhotosEnabled] = useState(true);
 
   async function markCompleted() {
     setSaving(true);
@@ -106,8 +111,21 @@ function MyJobDetailView({ id }) {
               )}
             </div>
           </Card>
+          <JobPhotos
+            jobId={job.id}
+            reloadKey={photosKey}
+            defaultKind={job.status === "completed" ? "after" : "before"}
+            onChange={(photos, enabled) => {
+              setAfterCount(photos.filter((photo) => photo.kind === "after").length);
+              setPhotosEnabled(enabled);
+            }}
+            onPhotosChanged={() => setNotesKey((key) => key + 1)}
+          />
           {job.status === "scheduled" ? (
             <div className="space-y-2">
+              {afterCount === 0 && photosEnabled && (
+                <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
+              )}
               <Button onClick={markCompleted} disabled={saving} size="lg" block className="sm:w-auto">
                 <CheckIcon className="h-5 w-5" />
                 {saving ? "Saving…" : "Mark completed"}
@@ -121,7 +139,12 @@ function MyJobDetailView({ id }) {
           )}
         </div>
         <div className="lg:col-span-2">
-          <JobNotes jobId={job.id} />
+          <JobNotes
+            jobId={job.id}
+            reloadKey={notesKey}
+            photosEnabled={photosEnabled}
+            onPhotosChanged={() => setPhotosKey((key) => key + 1)}
+          />
         </div>
       </div>
     </div>

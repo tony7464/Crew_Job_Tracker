@@ -11,6 +11,7 @@ import Loading from "../components/Loading";
 import { ItemsEditor, QuoteItems, QuoteTotals } from "../components/QuoteLines";
 import { Badge, QuoteStatusBadge, RequestStatusBadge } from "../components/ui/Badge";
 import { Button, ButtonLink } from "../components/ui/Button";
+import QuotePhotos from "../components/QuotePhotos";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState, Spinner } from "../components/ui/Feedback";
 import { BriefcaseIcon, InboxIcon, MailIcon, MapPinIcon, UsersIcon } from "../components/ui/Icons";
@@ -588,6 +589,7 @@ function SentActions({ quote, onResend, onRevise }) {
 }
 
 function QuoteSummary({ quote, sendResult, onResend, onRevise }) {
+  const photos = quote.photos || [];
   return (
     <div className="space-y-6">
       <EmailSendResult
@@ -628,6 +630,11 @@ function QuoteSummary({ quote, sendResult, onResend, onRevise }) {
               )}
             </dl>
           </Card>
+          {photos.length > 0 && (
+            <Card title="Photos" description="Shown to the client on the quote.">
+              <QuotePhotos photos={photos} quoteId={quote.id} />
+            </Card>
+          )}
         </div>
         <div className="space-y-6">
           <Card title="Client link" description="Anyone with this link can see the quote and answer it, without logging in.">
@@ -707,6 +714,14 @@ function QuoteView({ id }) {
   const draft = quote.status === "draft";
   const closed = quote.closed_reason === "request_accepted";
 
+  // Photos save on their own, so they never touch the editor's unsaved changes.
+  function changePhotos(update) {
+    setData((current) => {
+      const photos = update(current.photos || []);
+      return { ...current, photos, photo_count: photos.length };
+    });
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
@@ -733,9 +748,22 @@ function QuoteView({ id }) {
             {sendError && <Alert tone="danger" title="Saved as a draft, but not sent">{sendError}</Alert>}
             {closed && <DecisionAlert quote={quote} />}
           </QuoteEditor>
+          <Card
+            title="Photos"
+            description={quote.request_id ? "Starts with the photos from the client's request. Remove any you do not want to show." : "Optional photos of the area, shown with the quote."}
+          >
+            <QuotePhotos
+              photos={quote.photos || []}
+              quoteId={quote.id}
+              editable
+              enabled={quote.photos_enabled}
+              maxPhotos={quote.max_photos}
+              onChange={changePhotos}
+            />
+          </Card>
           <ConfirmDelete
             label="Delete draft"
-            description="Permanently deletes this draft. Quotes that were sent cannot be deleted."
+            description="Permanently deletes this draft and its photos. Quotes that were sent cannot be deleted."
             onConfirm={async () => {
               await api(`/api/quotes/${id}`, { method: "DELETE" });
               navigate("/quotes");

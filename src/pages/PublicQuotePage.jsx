@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../api";
 import { BusinessHeading, PublicShell, StatusCard } from "../components/PublicPage";
 import { QuoteItems, QuoteTotals } from "../components/QuoteLines";
+import QuotePhotos from "../components/QuotePhotos";
 import { Button } from "../components/ui/Button";
 import { Alert, Spinner } from "../components/ui/Feedback";
 import { AlertIcon, CheckIcon, ClockIcon, InfoIcon, XIcon } from "../components/ui/Icons";
@@ -137,6 +138,12 @@ function QuoteCard({ quote, children }) {
           total={quote.total_cents}
         />
       </div>
+      {quote.photos?.length > 0 && (
+        <div className="border-t border-border p-4 sm:p-6">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Photos</h3>
+          <QuotePhotos photos={quote.photos} />
+        </div>
+      )}
       {quote.notes && (
         <div className="border-t border-border p-4 sm:p-6">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Notes</h3>
