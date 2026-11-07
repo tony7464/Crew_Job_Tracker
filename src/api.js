@@ -72,7 +72,17 @@ export async function api(path, { method = "GET", body, skipAuth = false } = {})
     headers: write || body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
+  return handleResponse(response, skipAuth);
+}
 
+// POST a FormData body as multipart/form-data, such as one job photo. The browser
+// sets the Content-Type (with its boundary); the API accepts multipart writes.
+export async function apiUpload(path, formData, { method = "POST" } = {}) {
+  const response = await fetch(apiUrl(path), { method, credentials: "include", body: formData });
+  return handleResponse(response, false);
+}
+
+async function handleResponse(response, skipAuth) {
   if (response.status === 204) return null;
 
   const data = await response.json().catch(() => ({}));

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, fetchAll } from "../api";
 import ConfirmDelete from "../components/ConfirmDelete";
@@ -5,6 +6,7 @@ import CreateInvoiceButton from "../components/CreateInvoiceButton";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import JobNotes from "../components/JobNotes";
+import JobPhotos from "../components/JobPhotos";
 import Loading from "../components/Loading";
 import { PersonChips } from "../components/ui/Avatar";
 import { InvoiceStatusBadge, PaidBadge, StatusBadge } from "../components/ui/Badge";
@@ -59,6 +61,9 @@ function JobDetailView({ id }) {
   const job = jobState.data;
   const clients = clientsState.data;
   const employees = employeesState.data;
+  // Each card refreshes the other when it changes photos.
+  const [photosKey, setPhotosKey] = useState(0);
+  const [notesKey, setNotesKey] = useState(0);
 
   async function save(body) {
     jobState.setData(await api(`/api/jobs/${id}`, { method: "PATCH", body }));
@@ -131,12 +136,13 @@ function JobDetailView({ id }) {
         </Card>
         <div className="space-y-6 lg:col-span-2">
           <InvoiceCard job={job} />
-          <JobNotes jobId={job.id} />
+          <JobPhotos jobId={job.id} reloadKey={photosKey} onPhotosChanged={() => setNotesKey((key) => key + 1)} />
+          <JobNotes jobId={job.id} reloadKey={notesKey} onPhotosChanged={() => setPhotosKey((key) => key + 1)} />
         </div>
       </div>
       <ConfirmDelete
         label="Delete job"
-        description="Removes this job and its notes log. This cannot be undone."
+        description="Removes this job, its notes log, and its photos. This cannot be undone."
         onConfirm={async () => {
           await api(`/api/jobs/${id}`, { method: "DELETE" });
           navigate("/jobs");
