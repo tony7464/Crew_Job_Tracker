@@ -19,12 +19,13 @@ const OWNER_LINKS = [
   ["/invoices", "Invoices"],
   ["/employees", "Employees"],
   ["/timesheets", "Timesheets"],
+  ["/reports", "Reports"],
 ];
 
 // The owner's top bar has no room for every link, so related links share a small
 // menu there. The phone menu lists them as plain links.
 const LINK_GROUPS = [
-  ["Billing", new Set(["/quotes", "/invoices"])],
+  ["Billing", new Set(["/quotes", "/invoices", "/reports"])],
   ["Team", new Set(["/employees", "/timesheets"])],
 ];
 

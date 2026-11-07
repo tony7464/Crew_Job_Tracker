@@ -20,6 +20,8 @@
   --subtle: #8a92a1;
 
   --primary: #0b6aa2;
+  /* Chart bars: checked for contrast and lightness on this surface (dataviz validator). */
+  --chart-bar: #0b6aa2;
   --primary-hover: #095885;
   --primary-fg: #ffffff;
   --primary-soft: #e6f2fa;
@@ -57,6 +59,7 @@
   --subtle: #737e92;
 
   --primary: #4cb8f0;
+  --chart-bar: #2f9bd6;
   --primary-hover: #7ccbf5;
   --primary-fg: #04263b;
   --primary-soft: rgb(76 184 240 / 0.14);

@@ -20,12 +20,10 @@ function retryAfterSeconds(response) {
 }
 
 function messageFrom(data, status, retryAfter) {
-  // 429: too many login, signup, request form, quote, or pay page attempts. Show the server's message as written.
+  // 429: too many attempts (logins, forms, reminders, "on my way"). Show the server's message as written.
   if (status === 429) {
-    const limited =
-      data.errors?.form || data.errors?.quote || data.errors?.invoice || data.errors?.invite || data.errors?.email ||
-      data.errors?.auth;
-    if (limited) return [].concat(limited).join(" ");
+    const limited = data.errors && Object.values(data.errors).flat();
+    if (limited?.length) return limited.join(" ");
     return retryAfter
       ? `Too many attempts. Try again in ${retryAfter} ${retryAfter === 1 ? "second" : "seconds"}.`
       : "Too many attempts. Wait a minute and try again.";
