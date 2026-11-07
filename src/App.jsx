@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes, useMatch } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ClockBanner from "./components/time/ClockBanner";
 import VerifyEmailBanner from "./components/VerifyEmail";
 import Loading from "./components/Loading";
 import { useAuth } from "./context/useAuth";
@@ -25,6 +26,7 @@ import RequestsPage from "./pages/RequestsPage";
 import SchedulePage from "./pages/SchedulePage";
 import SettingsPage from "./pages/SettingsPage";
 import SignupPage from "./pages/SignupPage";
+import TimesheetsPage from "./pages/TimesheetsPage";
 import { homePath } from "./utils/roles";
 
 // Loaded on first use, so the main bundle stays small; a client opening a pay link
@@ -43,6 +45,7 @@ const PRIVATE = [
   ["/jobs", JobsPage, "owner"],
   ["/jobs/:id", JobDetail, "owner"],
   ["/employees", EmployeesPage, "owner"],
+  ["/timesheets", TimesheetsPage, "owner"],
   ["/clients", ClientsPage, "clients"],
   ["/clients/:id", ClientDetail, "clients"],
   ["/requests", RequestsPage, "requests"],
@@ -58,6 +61,7 @@ const PRIVATE = [
   ["/my-jobs", MyJobsPage, "employee"],
   ["/my-jobs/:id", MyJobDetail, "employee"],
   ["/calendar", CalendarPage, "employee"],
+  ["/my-hours", TimesheetsPage, "employee"],
   ["/account", AccountPage, undefined],
 ];
 
@@ -99,6 +103,7 @@ export default function App() {
         Skip to content
       </a>
       <NavBar />
+      <ClockBanner />
       <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
         <VerifyEmailBanner />
         <Suspense fallback={<Loading />}>
