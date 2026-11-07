@@ -289,3 +289,21 @@ export function RepeatIcon(props) {
     </Icon>
   );
 }
+
+export function CartIcon(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="9" cy="20" r="1.5" />
+      <circle cx="18" cy="20" r="1.5" />
+      <path d="M2 3h3l2.6 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6" />
+    </Icon>
+  );
+}
+
+export function PencilIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </Icon>
+  );
+}

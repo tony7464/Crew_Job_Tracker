@@ -41,6 +41,7 @@ function linksFor(user) {
   return [
     ["/my-jobs", "My jobs"],
     ["/calendar", "Calendar"],
+    ["/shopping", "Shopping list"],
     ["/my-hours", "My hours"],
     ...(canSeeTeamSchedule(user) ? [["/schedule", "Team schedule"]] : []),
     ...(hasClientAccess(user) ? [["/clients", "Clients"]] : []),

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import ChecklistCard from "../components/ChecklistCard";
+import MaterialsCard from "../components/MaterialsCard";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
 import OnMyWayCard from "../components/OnMyWayCard";
@@ -123,6 +124,7 @@ function MyJobDetailView({ id }) {
           <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ClockCard jobId={job.id} reloadKey={job.status} />
           <ChecklistCard jobId={job.id} onChange={setChecklist} />
+          <MaterialsCard key={job.status} jobId={job.id} />
           <JobPhotos
             jobId={job.id}
             reloadKey={photosKey}

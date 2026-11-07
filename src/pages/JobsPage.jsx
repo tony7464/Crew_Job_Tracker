@@ -6,8 +6,8 @@ import JobForm from "../components/JobForm";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
-import { Button } from "../components/ui/Button";
-import { PlusIcon } from "../components/ui/Icons";
+import { Button, ButtonLink } from "../components/ui/Button";
+import { CartIcon, PlusIcon } from "../components/ui/Icons";
 import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsync, usePaged } from "../hooks";
@@ -106,10 +106,16 @@ export default function JobsPage() {
         title="Jobs"
         description="Every job in your business, soonest date first."
         actions={
-          <Button onClick={() => setCreating(true)}>
-            <PlusIcon />
-            New job
-          </Button>
+          <>
+            <ButtonLink to="/shopping" variant="secondary">
+              <CartIcon />
+              Shopping list
+            </ButtonLink>
+            <Button onClick={() => setCreating(true)}>
+              <PlusIcon />
+              New job
+            </Button>
+          </>
         }
       />
       <div className="flex flex-wrap items-center gap-2">

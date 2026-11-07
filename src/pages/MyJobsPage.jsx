@@ -3,7 +3,7 @@ import JobList from "../components/JobList";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
 import { ButtonLink } from "../components/ui/Button";
-import { CalendarIcon, PlusIcon } from "../components/ui/Icons";
+import { CalendarIcon, CartIcon, PlusIcon } from "../components/ui/Icons";
 import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { useAuth } from "../context/useAuth";
 import { usePaged } from "../hooks";
@@ -23,6 +23,10 @@ export default function MyJobsPage() {
             <ButtonLink to="/calendar" variant="secondary">
               <CalendarIcon />
               Calendar
+            </ButtonLink>
+            <ButtonLink to="/shopping" variant="secondary">
+              <CartIcon />
+              Shopping list
             </ButtonLink>
             <ButtonLink to="/calendar?addLunch=1">
               <PlusIcon />
