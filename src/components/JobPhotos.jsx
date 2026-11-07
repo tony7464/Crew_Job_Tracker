@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { useAsync } from "../hooks";
-import { KIND_LABELS, KIND_TONES, PHOTO_KINDS, photoSrc } from "../utils/jobPhotos";
+import { KIND_LABELS, PHOTO_KINDS, photoSrc } from "../utils/jobPhotos";
 import ErrorMessage from "./ErrorMessage";
 import Loading from "./Loading";
 import PhotoButtons from "./photos/PhotoButtons";
 import PhotoLightbox from "./photos/PhotoLightbox";
 import UploadTile from "./photos/UploadTile";
 import { usePhotoUploads } from "./photos/usePhotoUploads";
-import { Badge } from "./ui/Badge";
 import { Card } from "./ui/Card";
 import { Alert } from "./ui/Feedback";
 import { cx } from "./ui/styles";
@@ -17,13 +16,14 @@ const FILTERS = [["all", "All"], ...PHOTO_KINDS];
 
 // A job's photos: take or choose photos, label them Before / After / Progress / Issue,
 // and look through them. reloadKey: bump to fetch again (after a note with photos, say).
-// onChange(photos) after every load or change; onPhotosChanged() after this card changes them.
+// onChange(photos, enabled) after every load or change (enabled: photo storage is on);
+// onPhotosChanged() after this card changes them.
 export default function JobPhotos({ jobId, reloadKey = 0, defaultKind = "progress", onChange, onPhotosChanged }) {
   const { data, setData, error } = useAsync(api, `/api/jobs/${jobId}/photos`, reloadKey);
   const [kind, setKind] = useState(defaultKind);
   const [filter, setFilter] = useState("all");
   const [open, setOpen] = useState(null);
-  const uploads = usePhotoUploads(jobId, {
+  const uploads = usePhotoUploads(`/api/jobs/${jobId}/photos`, {
     onUploaded(photo) {
       setData((current) => current && { ...current, photos: [...current.photos, photo] });
       onPhotosChanged?.();
@@ -36,9 +36,10 @@ export default function JobPhotos({ jobId, reloadKey = 0, defaultKind = "progres
   useEffect(() => {
     onChangeRef.current = onChange;
   });
+  const enabled = data?.enabled;
   useEffect(() => {
-    if (photos) onChangeRef.current?.(photos);
-  }, [photos]);
+    if (photos) onChangeRef.current?.(photos, enabled);
+  }, [photos, enabled]);
 
   // Saved uploads leave this list and appear in the grid as real photos.
   const pending = uploads.items;
@@ -102,7 +103,7 @@ export default function JobPhotos({ jobId, reloadKey = 0, defaultKind = "progres
               ))}
             </div>
           </fieldset>
-          <PhotoButtons onFiles={(files) => uploads.add(files.slice(0, Math.max(0, room)), kind)} disabled={room <= 0} />
+          <PhotoButtons onFiles={(files) => uploads.add(files.slice(0, Math.max(0, room)), { kind })} disabled={room <= 0} />
           {room <= 0 && <p className="text-xs text-muted">This job has the most photos it can hold ({data.max_photos}).</p>}
         </div>
       ) : (
@@ -147,9 +148,10 @@ export default function JobPhotos({ jobId, reloadKey = 0, defaultKind = "progres
                 aria-label={`Open ${KIND_LABELS[photo.kind].toLowerCase()} photo ${index + 1}${photo.caption ? `: ${photo.caption}` : ""}`}
               >
                 <img src={photoSrc(photo, "thumb")} alt="" loading="lazy" className="h-full w-full object-cover" />
-                <Badge tone={KIND_TONES[photo.kind]} className="absolute bottom-1 left-1 shadow-card">
+                {/* A dark label reads on light and dark photos alike. */}
+                <span className="absolute bottom-1 left-1 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">
                   {KIND_LABELS[photo.kind]}
-                </Badge>
+                </span>
               </button>
             </li>
           ))}

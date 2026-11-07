@@ -64,6 +64,7 @@ function JobDetailView({ id }) {
   // Each card refreshes the other when it changes photos.
   const [photosKey, setPhotosKey] = useState(0);
   const [notesKey, setNotesKey] = useState(0);
+  const [photosEnabled, setPhotosEnabled] = useState(true);
 
   async function save(body) {
     jobState.setData(await api(`/api/jobs/${id}`, { method: "PATCH", body }));
@@ -136,8 +137,18 @@ function JobDetailView({ id }) {
         </Card>
         <div className="space-y-6 lg:col-span-2">
           <InvoiceCard job={job} />
-          <JobPhotos jobId={job.id} reloadKey={photosKey} onPhotosChanged={() => setNotesKey((key) => key + 1)} />
-          <JobNotes jobId={job.id} reloadKey={notesKey} onPhotosChanged={() => setPhotosKey((key) => key + 1)} />
+          <JobPhotos
+            jobId={job.id}
+            reloadKey={photosKey}
+            onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
+            onPhotosChanged={() => setNotesKey((key) => key + 1)}
+          />
+          <JobNotes
+            jobId={job.id}
+            reloadKey={notesKey}
+            photosEnabled={photosEnabled}
+            onPhotosChanged={() => setPhotosKey((key) => key + 1)}
+          />
         </div>
       </div>
       <ConfirmDelete

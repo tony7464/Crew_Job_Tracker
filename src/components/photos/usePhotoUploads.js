@@ -4,12 +4,13 @@ import { PhotoError, shrinkPhoto } from "../../utils/images";
 
 let nextKey = 0;
 
-// Photos picked on this device, uploaded to a job one at a time.
+// Photos picked on this device, uploaded one at a time to basePath, such as
+// /api/jobs/3/photos or /api/quotes/7/photos (each photo is then at basePath/<id>).
 // Each item: { key, previewUrl, status: "preparing" | "uploading" | "failed" | "done", error, photo }.
 // One request per photo, so a weak signal loses at most one, and Retry sends just that one again.
 // onUploaded(photo) runs for each photo the server saved. keepDone: false drops saved
 // photos from items (the caller shows them itself); true keeps them, to collect their ids.
-export function usePhotoUploads(jobId, { onUploaded, keepDone = true } = {}) {
+export function usePhotoUploads(basePath, { onUploaded, keepDone = true } = {}) {
   const [items, setItems] = useState([]);
   const itemsRef = useRef(items);
   const sources = useRef(new Map());
@@ -39,11 +40,11 @@ export function usePhotoUploads(jobId, { onUploaded, keepDone = true } = {}) {
       patch(key, { status: "uploading", error: null });
       const form = new FormData();
       form.append("photo", source.blob, "photo.jpg");
-      form.append("kind", source.kind);
-      const photo = await apiUpload(`/api/jobs/${jobId}/photos`, form);
+      Object.entries(source.fields).forEach(([name, value]) => form.append(name, value));
+      const photo = await apiUpload(basePath, form);
       if (!sources.current.has(key)) {
         // Removed while uploading: take it back off the job.
-        api(`/api/jobs/${jobId}/photos/${photo.id}`, { method: "DELETE" }).catch(() => {});
+        api(`${basePath}/${photo.id}`, { method: "DELETE" }).catch(() => {});
         return;
       }
       if (keepDone) {
@@ -73,11 +74,11 @@ export function usePhotoUploads(jobId, { onUploaded, keepDone = true } = {}) {
     queue.current = queue.current.then(() => send(key));
   }
 
-  // files: a FileList or array. kind: before | after | progress | issue.
-  function add(files, kind = "progress") {
+  // files: a FileList or array. fields: extra form fields, such as { kind: "before" }.
+  function add(files, fields = {}) {
     const added = [...files].map((file) => {
       const key = `upload-${(nextKey += 1)}`;
-      sources.current.set(key, { file, kind, blob: null });
+      sources.current.set(key, { file, fields, blob: null });
       return { key, previewUrl: null, status: "preparing", error: null, name: file.name };
     });
     setItems((current) => [...current, ...added]);
@@ -95,7 +96,7 @@ export function usePhotoUploads(jobId, { onUploaded, keepDone = true } = {}) {
     sources.current.delete(key);
     if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
     if (deleteSaved && item?.photo) {
-      api(`/api/jobs/${jobId}/photos/${item.photo.id}`, { method: "DELETE" }).catch(() => {});
+      api(`${basePath}/${item.photo.id}`, { method: "DELETE" }).catch(() => {});
     }
     setItems((current) => current.filter((entry) => entry.key !== key));
   }

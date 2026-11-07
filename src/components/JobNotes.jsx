@@ -26,15 +26,16 @@ function formatStamp(value) {
 
 // The timestamped notes log on a job, shared by the owner and assigned employees.
 // A note can carry photos: each is uploaded to the job as soon as it is picked, and
-// posting the note attaches them. reloadKey: bump to fetch again. onPhotosChanged():
+// posting the note attaches them (photosEnabled false hides the photo buttons, as when
+// photo storage is off). reloadKey: bump to fetch again. onPhotosChanged():
 // after this log adds, changes, or deletes photos, so the Photos card can catch up.
-export default function JobNotes({ jobId, reloadKey = 0, onPhotosChanged }) {
+export default function JobNotes({ jobId, reloadKey = 0, photosEnabled = true, onPhotosChanged }) {
   const { data: notes, setData, error } = useAsync(api, `/api/jobs/${jobId}/notes`, reloadKey);
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [open, setOpen] = useState(null);
-  const uploads = usePhotoUploads(jobId, { onUploaded: () => onPhotosChanged?.() });
+  const uploads = usePhotoUploads(`/api/jobs/${jobId}/photos`, { onUploaded: () => onPhotosChanged?.() });
 
   const saved = uploads.items.filter((item) => item.status === "done");
   const room = MAX_NOTE_PHOTOS - uploads.items.length;
@@ -149,7 +150,11 @@ export default function JobNotes({ jobId, reloadKey = 0, onPhotosChanged }) {
         {failed && <p className="text-xs font-medium text-danger">Retry or remove the photos that did not upload.</p>}
         <ErrorMessage error={submitError} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <PhotoButtons onFiles={(files) => uploads.add(files.slice(0, Math.max(0, room)))} disabled={room <= 0} size="sm" />
+          {photosEnabled ? (
+            <PhotoButtons onFiles={(files) => uploads.add(files.slice(0, Math.max(0, room)))} disabled={room <= 0} size="sm" />
+          ) : (
+            <span />
+          )}
           <Button type="submit" disabled={!canPost || failed} className="w-full sm:w-auto">
             {submitting ? "Adding…" : uploads.busy ? "Uploading photos…" : "Add note"}
           </Button>
