@@ -9,16 +9,16 @@ import CreateInvoiceButton from "../components/CreateInvoiceButton";
 import EmailSendResult from "../components/EmailSendResult";
 import Loading from "../components/Loading";
 import { ItemsEditor, QuoteItems, QuoteTotals } from "../components/QuoteLines";
-import { Badge, QuoteStatusBadge, RequestStatusBadge } from "../components/ui/Badge";
+import { Badge, QuoteStatusBadge, RequestStatusBadge, StatusBadge } from "../components/ui/Badge";
 import { Button, ButtonLink } from "../components/ui/Button";
 import QuotePhotos from "../components/QuotePhotos";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState, Spinner } from "../components/ui/Feedback";
-import { BriefcaseIcon, InboxIcon, MailIcon, MapPinIcon, UsersIcon } from "../components/ui/Icons";
+import { BriefcaseIcon, CalendarIcon, InboxIcon, MailIcon, MapPinIcon, PhoneIcon, UsersIcon } from "../components/ui/Icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { cx } from "../components/ui/styles";
 import { useAsync } from "../hooks";
-import { formatMoney } from "../utils/format";
+import { formatDay, formatMoney } from "../utils/format";
 import {
   MAX_NOTES,
   MAX_TITLE,
@@ -34,10 +34,12 @@ import {
   validateItems,
   validateTaxRate,
 } from "../utils/quotes";
-import { emailLooksValid, fieldErrors, localToday } from "../utils/requests";
+import { emailLooksValid, fieldErrors, localToday, phoneLooksValid } from "../utils/requests";
 
 const BACK = { to: "/quotes", label: "Quotes" };
-const FORM_FIELDS = ["title", "customer_name", "customer_email", "customer_address", "notes", "valid_until", "tax_rate"];
+const FORM_FIELDS = [
+  "title", "customer_name", "customer_email", "customer_phone", "customer_address", "notes", "valid_until", "tax_rate",
+];
 
 export default function QuoteDetail() {
   const { id } = useParams();
@@ -58,6 +60,7 @@ function formFromQuote(quote) {
       title: quote.title || "",
       customer_name: quote.customer_name || "",
       customer_email: quote.customer_email || "",
+      customer_phone: quote.customer_phone || "",
       customer_address: quote.customer_address || "",
       notes: quote.notes || "",
       valid_until: quote.valid_until || "",
@@ -73,6 +76,7 @@ function bodyFrom(values, items) {
     title: values.title.trim(),
     customer_name: values.customer_name.trim(),
     customer_email: values.customer_email.trim() || null,
+    customer_phone: values.customer_phone.trim() || null,
     customer_address: values.customer_address.trim() || null,
     notes: values.notes.trim() || null,
     valid_until: values.valid_until || null,
@@ -94,6 +98,8 @@ function validate(values, items, { sending }) {
   if (!values.customer_name.trim()) errors.customer_name = "Enter the customer's name.";
   const email = values.customer_email.trim();
   if (email && !emailLooksValid(email)) errors.customer_email = "Enter an email address like name@example.com.";
+  const phone = values.customer_phone.trim();
+  if (phone && !phoneLooksValid(phone)) errors.customer_phone = "Enter a phone number like (512) 555-0101.";
   const taxError = validateTaxRate(values.tax_rate);
   if (taxError) errors.tax_rate = taxError;
   if (sending && values.valid_until && values.valid_until < localToday()) {
@@ -240,6 +246,17 @@ function QuoteEditor({ initial, onSave, onSend, saveLabel, sendBlocked, children
               disabled={disabled}
             />
             <Input
+              label="Phone"
+              type="tel"
+              inputMode="tel"
+              value={values.customer_phone}
+              onChange={set("customer_phone")}
+              error={errors.customer_phone}
+              maxLength={40}
+              autoComplete="off"
+              disabled={disabled}
+            />
+            <Input
               label="Address"
               value={values.customer_address}
               onChange={set("customer_address")}
@@ -247,7 +264,6 @@ function QuoteEditor({ initial, onSave, onSend, saveLabel, sendBlocked, children
               maxLength={300}
               autoComplete="off"
               disabled={disabled}
-              className="sm:col-span-2"
             />
           </div>
         </Card>
@@ -500,6 +516,17 @@ function Linked({ quote }) {
       </li>,
     );
   }
+  if (quote.visit) {
+    rows.push(
+      <li key="visit" className="flex items-center justify-between gap-3">
+        <Link to={`/jobs/${quote.visit.id}`} className="link inline-flex min-w-0 items-center gap-2">
+          <CalendarIcon className="h-4 w-4 shrink-0" />
+          <span className="truncate">Estimate visit on {formatDay(quote.visit.date)}</span>
+        </Link>
+        <StatusBadge status={quote.visit.status} />
+      </li>,
+    );
+  }
   if (quote.job_id) {
     rows.push(
       <li key="job">
@@ -528,6 +555,14 @@ function CustomerDetails({ quote }) {
           )}
         </dd>
       </div>
+      {quote.customer_phone && (
+        <div className="flex gap-2.5">
+          <dt className="mt-0.5 text-muted"><PhoneIcon className="h-4 w-4" /><span className="sr-only">Phone</span></dt>
+          <dd className="min-w-0">
+            <a href={`tel:${quote.customer_phone}`} className="link">{quote.customer_phone}</a>
+          </dd>
+        </div>
+      )}
       <div className="flex gap-2.5">
         <dt className="mt-0.5 text-muted"><MapPinIcon className="h-4 w-4" /><span className="sr-only">Address</span></dt>
         <dd className="min-w-0">{quote.customer_address || <span className="text-muted">No address</span>}</dd>

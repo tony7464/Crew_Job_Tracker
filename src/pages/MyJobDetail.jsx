@@ -8,11 +8,12 @@ import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
 import OnMyWayCard from "../components/OnMyWayCard";
 import SignatureCard from "../components/SignatureCard";
+import VisitCard from "../components/VisitCard";
 import ClockCard from "../components/time/ClockCard";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
 import { PersonChips } from "../components/ui/Avatar";
-import { RepeatBadge, StatusBadge } from "../components/ui/Badge";
+import { Badge, RepeatBadge, StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState } from "../components/ui/Feedback";
@@ -20,7 +21,10 @@ import { CalendarIcon, CheckIcon, ClockIcon, PhoneIcon } from "../components/ui/
 import { PageHeader } from "../components/ui/PageHeader";
 import { buttonClass } from "../components/ui/styles";
 import { useAsync } from "../hooks";
+import { useAuth } from "../context/useAuth";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
+import { hasClientAccess } from "../utils/roles";
+import { isEstimate } from "../utils/visits";
 import { notifyClockChanged } from "../utils/timeEntries";
 
 export default function MyJobDetail() {
@@ -29,6 +33,7 @@ export default function MyJobDetail() {
 }
 
 function MyJobDetailView({ id }) {
+  const { user } = useAuth();
   const { data: job, setData, error } = useAsync(api, `/api/jobs/${id}`);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -65,6 +70,8 @@ function MyJobDetailView({ id }) {
   if (error) return <ErrorMessage error={error} />;
   if (!job) return <Loading />;
   const minutes = job.duration_minutes ?? DEFAULT_DURATION;
+  const estimate = isEstimate(job);
+  const doneLabel = estimate ? "Mark visit done" : "Mark completed";
 
   return (
     <div className="space-y-6">
@@ -75,6 +82,7 @@ function MyJobDetailView({ id }) {
             {job.service_type}
             <StatusBadge status={job.status} />
             {job.repeats && <RepeatBadge text={job.repeats} />}
+            {estimate && <Badge tone="primary">Estimate visit</Badge>}
           </span>
         }
         description={
@@ -121,6 +129,9 @@ function MyJobDetailView({ id }) {
               )}
             </div>
           </Card>
+          {estimate && (
+            <VisitCard job={job} onChanged={setData} canEdit={hasClientAccess(user)} canOpenQuote={false} />
+          )}
           <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ClockCard jobId={job.id} reloadKey={job.status} />
           <ChecklistCard jobId={job.id} onChange={setChecklist} />
@@ -128,7 +139,7 @@ function MyJobDetailView({ id }) {
           <JobPhotos
             jobId={job.id}
             reloadKey={photosKey}
-            defaultKind={job.status === "completed" ? "after" : "before"}
+            defaultKind={!estimate && job.status === "completed" ? "after" : "before"}
             onChange={(photos, enabled) => {
               setAfterCount(photos.filter((photo) => photo.kind === "after").length);
               setPhotosEnabled(enabled);
@@ -142,23 +153,25 @@ function MyJobDetailView({ id }) {
                   {checklist.total - checklist.done} of {checklist.total} checklist steps are not ticked yet.
                 </p>
               )}
-              {afterCount === 0 && photosEnabled && (
+              {!estimate && afterCount === 0 && photosEnabled && (
                 <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
               )}
               <Button onClick={markCompleted} disabled={saving} size="lg" block className="sm:w-auto">
                 <CheckIcon className="h-5 w-5" />
-                {saving ? "Saving…" : "Mark completed"}
+                {saving ? "Saving…" : doneLabel}
               </Button>
               <ErrorMessage error={saveError} />
             </div>
           ) : job.status === "completed" ? (
-            <Alert tone="success">This job is marked completed. If that was a mistake, ask the owner to change it back.</Alert>
+            <Alert tone="success">
+              {estimate ? "This visit is done." : "This job is marked completed."} If that was a mistake, ask the owner to change it back.
+            </Alert>
           ) : (
-            <Alert tone="warning">This job was cancelled.</Alert>
+            <Alert tone="warning">{estimate ? "This visit was cancelled." : "This job was cancelled."}</Alert>
           )}
         </div>
         <div className="lg:col-span-2">
-          <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />
+          {!estimate && <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />}
           <JobNotes
             jobId={job.id}
             reloadKey={notesKey}

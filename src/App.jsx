@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes, useMatch } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import QuickAddButton from "./components/QuickAddButton";
 import ClockBanner from "./components/time/ClockBanner";
 import VerifyEmailBanner from "./components/VerifyEmail";
 import Loading from "./components/Loading";
@@ -17,6 +18,7 @@ import JobsPage from "./pages/JobsPage";
 import LoginPage from "./pages/LoginPage";
 import MyJobDetail from "./pages/MyJobDetail";
 import MyJobsPage from "./pages/MyJobsPage";
+import NewVisitPage from "./pages/NewVisitPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
 import PublicRequestPage from "./pages/PublicRequestPage";
 import QuoteDetail from "./pages/QuoteDetail";
@@ -52,6 +54,8 @@ const PRIVATE = [
   ["/clients/:id", ClientDetail, "clients"],
   ["/requests", RequestsPage, "requests"],
   ["/requests/:id", RequestDetail, "requests"],
+  // "New quote": book an estimate visit. The owner and leads, who book visits for clients.
+  ["/visits/new", NewVisitPage, "clients"],
   // Quotes are money, so owner-only. /quotes/new takes ?request_id= or ?client_id=.
   ["/quotes", QuotesPage, "owner"],
   ["/quotes/new", QuoteDetail, "owner"],
@@ -130,6 +134,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
+      <QuickAddButton />
     </div>
   );
 }

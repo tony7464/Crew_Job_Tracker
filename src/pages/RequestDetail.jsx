@@ -180,11 +180,19 @@ function RequestQuotes({ request, owner }) {
           {owner ? "Price the work and send the client a link to accept it." : "No quotes yet. The owner sends quotes."}
         </p>
       )}
-      {owner && !won && (
-        <ButtonLink to={`/quotes/new?request_id=${request.id}`} variant={request.quotes.length ? "secondary" : "primary"}>
-          <PlusIcon />
-          {request.quotes.length ? "Another quote" : "Create quote"}
-        </ButtonLink>
+      {!won && (
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink to={`/visits/new?request_id=${request.id}`} variant={request.quotes.length ? "secondary" : "primary"}>
+            <PlusIcon />
+            Schedule estimate visit
+          </ButtonLink>
+          {owner && (
+            <ButtonLink to={`/quotes/new?request_id=${request.id}`} variant="secondary">
+              <PlusIcon />
+              {request.quotes.length ? "Another quote" : "Quote without a visit"}
+            </ButtonLink>
+          )}
+        </div>
       )}
     </div>
   );

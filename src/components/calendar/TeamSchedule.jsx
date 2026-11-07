@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, fetchAll } from "../../api";
 import { useAsync, useMediaQuery, useSchedule, useSchedulePrefs } from "../../hooks";
 import { DEFAULT_DURATION } from "../../utils/format";
@@ -40,14 +41,25 @@ function NewJobDialog({ initial, onSubmit, onClose }) {
       ) : !clients.data || !employees.data ? (
         <Loading />
       ) : (
-        <JobForm
-          clients={clients.data}
-          employees={employees.data}
-          initial={initial}
-          onSubmit={onSubmit}
-          onCancel={onClose}
-          submitLabel="Add job"
-        />
+        <>
+          <p className="mb-4 text-sm text-muted">
+            Going out to look at the work first?{" "}
+            <Link
+              className="link"
+              to={`/visits/new?date=${initial?.date || ""}&time=${(initial?.time || "09:00").slice(0, 5)}`}
+            >
+              Book an estimate visit instead
+            </Link>
+          </p>
+          <JobForm
+            clients={clients.data}
+            employees={employees.data}
+            initial={initial}
+            onSubmit={onSubmit}
+            onCancel={onClose}
+            submitLabel="Add job"
+          />
+        </>
       )}
     </Modal>
   );

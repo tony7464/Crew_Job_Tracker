@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
@@ -16,13 +17,16 @@ import { useAsync } from "../hooks";
 import { daysBetween, formatDay, formatMoney, isOwed, overdueLabel, sumCents } from "../utils/format";
 
 // [totals key (whole cents), label, icon, icon colors, note(data)]
+// Estimate visits are free, so the week's counts are of paid work only.
+const workJobs = (data) => data.week_jobs.filter((job) => job.kind !== "estimate");
+
 const TOTAL_CARDS = [
   ["week_scheduled_cents", "Scheduled this week", CalendarIcon, "bg-primary-soft text-primary-soft-fg",
-    (data) => countLabel(data.week_jobs.filter((job) => job.status !== "cancelled").length)],
+    (data) => countLabel(workJobs(data).filter((job) => job.status !== "cancelled").length)],
   ["week_completed_cents", "Completed this week", CheckIcon, "bg-success-soft text-success-soft-fg",
-    (data) => countLabel(data.week_jobs.filter((job) => job.status === "completed").length)],
+    (data) => countLabel(workJobs(data).filter((job) => job.status === "completed").length)],
   ["paid_this_week_cents", "Paid this week", DollarIcon, "bg-success-soft text-success-soft-fg",
-    (data) => countLabel(data.week_jobs.filter((job) => job.status !== "cancelled" && job.paid).length)],
+    (data) => countLabel(workJobs(data).filter((job) => job.status !== "cancelled" && job.paid).length)],
   ["unpaid_total_cents", "Owed, all time", DollarIcon, "bg-warning-soft text-warning-soft-fg",
     (data) => `${countLabel(data.totals.unpaid_count)} completed, not paid`],
 ];
@@ -132,10 +136,16 @@ export default function DashboardPage() {
         title="Dashboard"
         description={`This week: ${formatDay(data.week_start)} – ${formatDay(data.week_end)}`}
         actions={
-          <ButtonLink to="/jobs?new=1">
-            <PlusIcon />
-            New job
-          </ButtonLink>
+          <>
+            <ButtonLink to="/jobs?new=1" variant="secondary">
+              <PlusIcon />
+              New job
+            </ButtonLink>
+            <ButtonLink to="/visits/new">
+              <PlusIcon />
+              New quote
+            </ButtonLink>
+          </>
         }
       />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -169,6 +179,7 @@ export default function DashboardPage() {
           onChanged={refreshTotals}
         />
       </Card>
+      {data.visits_to_price?.length > 0 && <VisitsToPrice visits={data.visits_to_price} />}
       <section>
         <SectionHeader
           title="Owed"
@@ -203,5 +214,41 @@ export default function DashboardPage() {
         )}
       </section>
     </div>
+  );
+}
+
+// Estimate visits that have happened whose quote is not sent yet.
+function VisitsToPrice({ visits }) {
+  return (
+    <section>
+      <SectionHeader
+        title="Visits to price"
+        description="The crew has been out to look. Write the quote from their photos, notes, and materials."
+      />
+      <ul className="divide-y divide-border rounded-xl border border-border bg-surface shadow-card">
+        {visits.map((visit) => (
+          <li key={visit.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <Link to={`/jobs/${visit.id}`} className="font-medium text-fg hover:text-primary hover:underline">
+                {visit.client_name}
+              </Link>
+              <p className="text-sm text-muted">
+                {visit.service_type} · visited {formatDay(visit.date)}
+                {visit.status === "scheduled" && " (not marked done)"}
+              </p>
+            </div>
+            {visit.visit_quote ? (
+              <ButtonLink to={`/quotes/${visit.visit_quote.id}`} size="sm">
+                Write the quote
+              </ButtonLink>
+            ) : (
+              <ButtonLink to={`/jobs/${visit.id}`} size="sm" variant="secondary">
+                Open visit
+              </ButtonLink>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
