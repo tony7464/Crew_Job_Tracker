@@ -276,9 +276,16 @@ function PublicInvoice({ token }) {
     } catch (err) {
       setPaying(null);
       if (err.data?.errors?.payment) {
-        // Not available right now (not connected, or Stripe is off): say so, and show the invoice as it is.
-        setUnavailable(err.data.errors.payment[0]);
-        await load();
+        const message = err.data.errors.payment[0];
+        const fresh = await load();
+        if (fresh?.can_pay) {
+          // Online payment is on, but this attempt failed (Stripe refused or was slow):
+          // say so next to the button, so tapping Pay never looks like it did nothing.
+          setPayError(message);
+        } else {
+          // Not available right now (not connected, or Stripe is off): say so, and show the invoice as it is.
+          setUnavailable(message);
+        }
       } else if (err.status === 409 || err.status === 404) {
         // Paid or voided meanwhile (maybe in another tab).
         await load();
