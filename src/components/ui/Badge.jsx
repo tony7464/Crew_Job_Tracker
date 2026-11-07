@@ -1,4 +1,5 @@
 import { statusLabel } from "../../utils/format";
+import { RepeatIcon } from "./Icons";
 import { BADGE_TONES, INVOICE_STATUS_TONES, QUOTE_STATUS_TONES, REQUEST_STATUS_TONES, STATUS_TONES, cx } from "./styles";
 
 // tone: neutral | primary | success | warning | danger
@@ -49,6 +50,16 @@ export function InvoiceStatusBadge({ invoice }) {
         <Badge tone="danger" title="A payment could not be applied to this invoice">Needs attention</Badge>
       )}
     </span>
+  );
+}
+
+// How a recurring visit repeats, such as "Every 2 weeks".
+export function RepeatBadge({ text }) {
+  return (
+    <Badge tone="primary" title="This visit is part of a recurring series">
+      <RepeatIcon className="h-3 w-3" />
+      {text}
+    </Badge>
   );
 }
 

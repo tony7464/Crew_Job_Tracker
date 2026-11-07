@@ -12,6 +12,7 @@ import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsync, usePaged } from "../hooks";
 import { STATUSES, statusLabel } from "../utils/format";
+import { createJob as addJob } from "../utils/series";
 
 export default function JobsPage() {
   // ?new=1 opens the new-job form; ?client=<id> also picks the client.
@@ -41,7 +42,7 @@ export default function JobsPage() {
   }
 
   async function createJob(body) {
-    await api("/api/jobs", { method: "POST", body });
+    await addJob(body);
     jobsState.reset();
     closeForm();
   }
