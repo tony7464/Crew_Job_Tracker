@@ -1,6 +1,6 @@
 import { useSubmit } from "../hooks";
 import ErrorMessage from "./ErrorMessage";
-import { FormActions, Input, TextArea } from "./Field";
+import { Checkbox, FormActions, Input, TextArea } from "./Field";
 import { Button } from "./ui/Button";
 
 export default function ClientForm({ initial, onSubmit, submitLabel, onCancel }) {
@@ -14,6 +14,7 @@ export default function ClientForm({ initial, onSubmit, submitLabel, onCancel })
       phone: form.get("phone") || null,
       email: form.get("email") || null,
       notes: form.get("notes") || null,
+      sms_opt_out: form.get("sms_opt_out") === "on",
     });
   }
 
@@ -31,6 +32,12 @@ export default function ClientForm({ initial, onSubmit, submitLabel, onCancel })
         defaultValue={initial?.notes ?? ""}
         rows="3"
         hint="Gate codes, pets, parking. Crew members with client access can see these."
+      />
+      <Checkbox
+        name="sms_opt_out"
+        defaultChecked={Boolean(initial?.sms_opt_out)}
+        label="Do not text"
+        description="They asked not to get texts. Visit confirmations, reminders, and quote links go by email instead."
       />
       <ErrorMessage error={error} />
       <FormActions>

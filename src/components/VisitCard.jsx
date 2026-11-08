@@ -4,7 +4,7 @@ import { useAsync } from "../hooks";
 import { DURATION_PRESETS, formatDuration, inputTime } from "../utils/format";
 import { fieldErrors } from "../utils/requests";
 import ErrorMessage from "./ErrorMessage";
-import { Input, Select, TextArea } from "./Field";
+import { Checkbox, Input, Select, TextArea } from "./Field";
 import { Avatar } from "./ui/Avatar";
 import { Badge } from "./ui/Badge";
 import { Button, ButtonLink } from "./ui/Button";
@@ -29,6 +29,7 @@ function QuoteStatus({ quote }) {
 // changing who goes, and cancelling. canOpenQuote: the owner, who prices the work.
 // quotingHere: the quote is priced on this page (VisitQuoteCard), so no "the office prices it" note.
 export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quotingHere = false }) {
+  const [messagesKey, setMessagesKey] = useState(0);
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -43,6 +44,7 @@ export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quoti
       onChanged(result.visit);
       setSaved(result.confirmation);
       setEditing(false);
+      setMessagesKey((key) => key + 1);
       return true;
     } catch (err) {
       setError(err);
@@ -119,8 +121,87 @@ export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quoti
           <VisitForm job={job} busy={busy} error={error} onCancel={() => setEditing(false)} onSave={patch} />
         )}
         {!editing && <ErrorMessage error={error} />}
+        <VisitMessages jobId={job.id} canSend={canEdit} reloadKey={`${messagesKey}-${job.status}`} />
       </div>
     </Card>
+  );
+}
+
+const MESSAGE_LABELS = {
+  visit_confirmation: "Confirmation",
+  visit_rescheduled: "New time",
+  visit_cancelled: "Cancellation",
+  visit_reminder: "Day-before reminder",
+  quote_link: "Quote link",
+};
+
+function when(iso) {
+  return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+// What the customer was sent about this visit, and (canSend) sending the details again.
+function VisitMessages({ jobId, canSend, reloadKey }) {
+  const [resent, setResent] = useState(0);
+  const { data, error } = useAsync(api, `/api/visits/${jobId}/messages`, `${reloadKey}-${resent}`);
+  const [busy, setBusy] = useState(false);
+  const [sendError, setSendError] = useState(null);
+
+  async function resend() {
+    setBusy(true);
+    setSendError(null);
+    try {
+      await api(`/api/visits/${jobId}/confirmation`, { method: "POST", body: {} });
+      setResent((count) => count + 1);
+    } catch (err) {
+      setSendError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (error) return <ErrorMessage error={error} />;
+  if (!data) return null;
+  const reachable = data.channels.sms === "ok" || data.channels.email === "ok";
+  const notSetUp = data.delivery.sms === "log" && data.delivery.email === "log";
+
+  return (
+    <div className="border-t border-border pt-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-medium text-fg">Sent to the customer</p>
+        {canSend && data.can_send && reachable && (
+          <Button size="sm" variant="ghost" disabled={busy} onClick={resend}>
+            {busy ? "Sending…" : "Send the details again"}
+          </Button>
+        )}
+      </div>
+      {data.messages.length === 0 ? (
+        <p className="text-sm text-muted">
+          {reachable ? "Nothing yet." : "Nothing: there's no phone number or email for them."}
+        </p>
+      ) : (
+        <ul className="space-y-1.5 text-sm">
+          {data.messages.slice(0, 6).map((message) => (
+            <li key={message.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="text-fg">
+                {MESSAGE_LABELS[message.kind] || message.kind}{" "}
+                <span className="text-muted">
+                  · {message.channel === "sms" ? "text to" : "email to"} {message.sent_to}
+                </span>
+              </span>
+              <span className="text-xs text-muted">
+                {message.automatic ? "Automatic · " : ""}
+                {when(message.sent_at)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {notSetUp && data.messages.length > 0 && (
+        <p className="mt-2 text-xs text-muted">Texting and email aren't set up yet, so these were only logged, not delivered.</p>
+      )}
+      {data.channels.sms === "opted_out" && <p className="mt-2 text-xs text-muted">They asked not to get texts.</p>}
+      <ErrorMessage error={sendError} />
+    </div>
   );
 }
 
@@ -132,6 +213,7 @@ function VisitForm({ job, busy, error, onCancel, onSave }) {
     service_type: job.service_type,
     notes: job.notes || "",
     crew: job.assignees.map((person) => person.id),
+    notify: true,
   });
   const { data } = useAsync(api, `/api/schedule/team?start=${form.date}&end=${form.date}`);
   const crewIds = new Set(form.crew);
@@ -161,6 +243,7 @@ function VisitForm({ job, busy, error, onCancel, onSave }) {
       service_type: form.service_type.trim() || job.service_type,
       notes: form.notes.trim() || null,
       employee_ids: form.crew,
+      notify: form.notify,
     });
   }
 
@@ -206,6 +289,11 @@ function VisitForm({ job, busy, error, onCancel, onSave }) {
         </div>
       )}
       <TextArea label="Notes for the crew" value={form.notes} onChange={set("notes")} error={errors.notes} maxLength={2000} />
+      <Checkbox
+        label="Tell the customer if the date or time changes"
+        checked={form.notify}
+        onChange={(event) => setForm((current) => ({ ...current, notify: event.target.checked }))}
+      />
       <ErrorMessage error={Object.keys(errors).length ? null : error} />
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>

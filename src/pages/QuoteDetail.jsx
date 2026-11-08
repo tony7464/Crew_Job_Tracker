@@ -542,6 +542,24 @@ function Linked({ quote }) {
   return <ul className="space-y-2.5 text-sm">{rows}</ul>;
 }
 
+// Whether the quote link also went out by text.
+function TextSendResult({ result, phone }) {
+  if (!result?.sms) return null;
+  if (result.sms === "queued") {
+    return result.sms_delivery === "twilio" ? (
+      <Alert tone="success">The link was also texted to {phone}.</Alert>
+    ) : (
+      <Alert tone="info">Texting isn't set up yet, so the link was not texted to {phone}.</Alert>
+    );
+  }
+  const reasons = {
+    skipped_opted_out: "Not texted: they asked not to get texts.",
+    recently_texted: "Not texted again: the link was texted to them a few minutes ago.",
+    limit: "Not texted: today's text limit for your business is used up.",
+  };
+  return reasons[result.sms] ? <Alert tone="info">{reasons[result.sms]}</Alert> : null;
+}
+
 function CustomerDetails({ quote }) {
   return (
     <dl className="space-y-2.5 text-sm">
@@ -635,6 +653,7 @@ function QuoteSummary({ quote, sendResult, onResend, onRevise }) {
         to={sendResult?.quote.customer_email}
         customerName={quote.customer_name}
       />
+      <TextSendResult result={sendResult} phone={quote.customer_phone} />
       <DecisionAlert quote={quote} />
       <div className="grid items-start gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
