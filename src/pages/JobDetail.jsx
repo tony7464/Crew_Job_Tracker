@@ -5,10 +5,13 @@ import ConfirmDelete from "../components/ConfirmDelete";
 import CreateInvoiceButton from "../components/CreateInvoiceButton";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
+import ChecklistCard from "../components/ChecklistCard";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
+import OnMyWayCard from "../components/OnMyWayCard";
 import JobTimeCard from "../components/time/JobTimeCard";
 import SeriesCard from "../components/SeriesCard";
+import SignatureCard from "../components/SignatureCard";
 import Loading from "../components/Loading";
 import { PersonChips } from "../components/ui/Avatar";
 import { InvoiceStatusBadge, PaidBadge, RepeatBadge, StatusBadge } from "../components/ui/Badge";
@@ -151,6 +154,8 @@ function JobDetailView({ id }) {
         <div className="space-y-6 lg:col-span-2">
           <InvoiceCard job={job} />
           <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />
+          <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
+          <ChecklistCard key={job.service_type} jobId={job.id} />
           <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
           <JobPhotos
             jobId={job.id}
@@ -158,6 +163,7 @@ function JobDetailView({ id }) {
             onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
             onPhotosChanged={() => setNotesKey((key) => key + 1)}
           />
+          <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />
           <JobNotes
             jobId={job.id}
             reloadKey={notesKey}
