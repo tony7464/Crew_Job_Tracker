@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, setOnForbidden, setOnUnauthorized } from "../api";
+import { rememberSignedIn } from "./signedIn";
 import { AuthContext } from "./useAuth";
 
 // user is the /api/check_session payload: id, username, role ("owner" or
@@ -21,6 +22,11 @@ export function AuthProvider({ children }) {
       setUser(null);
     }
   }, []);
+
+  // Remember on this device whether someone is signed in (see signedIn.js).
+  useEffect(() => {
+    if (!loading) rememberSignedIn(Boolean(user));
+  }, [user, loading]);
 
   useEffect(() => {
     setOnUnauthorized(() => setUser(null));

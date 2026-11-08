@@ -1,0 +1,48 @@
+{
+  "trialDays": 14,
+  "annualMonthsFree": 2,
+  "platformFeePercent": 0,
+  "plans": [
+    {
+      "id": "solo",
+      "name": "Solo",
+      "monthly": 29,
+      "crewLimit": 2,
+      "blurb": "For an owner who works the jobs, with a helper or two.",
+      "features": [
+        "Customer texts and emails included"
+      ]
+    },
+    {
+      "id": "crew",
+      "name": "Crew",
+      "monthly": 59,
+      "crewLimit": 10,
+      "popular": true,
+      "blurb": "For a growing team running several jobs a day.",
+      "features": [
+        "Customer texts and emails included"
+      ]
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "monthly": 99,
+      "crewLimit": null,
+      "blurb": "For established businesses with several crews.",
+      "features": [
+        "A bigger monthly allowance of customer texts"
+      ]
+    }
+  ],
+  "everyPlan": [
+    "New quote intake and estimate visits",
+    "Quoting on site, accepted on the spot",
+    "Team schedule and the crew's phone app",
+    "Photos, checklists, and materials on every job",
+    "Invoices and online card payments",
+    "Recurring jobs",
+    "Timesheets and reports",
+    "Visit confirmations and day-before reminders"
+  ]
+}
