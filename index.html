@@ -4,7 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Set to the light or dark background by the script below and ThemeContext. -->
     <meta name="theme-color" content="#f5f6f8" />
+    <!-- Installable on a phone's home screen: Android reads the manifest, iPhone the apple-* tags. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Crew Jobs" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Crew Job Tracker</title>
     <script>
       // Apply the saved or system theme before the first paint so the page never

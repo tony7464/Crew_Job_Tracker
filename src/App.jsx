@@ -21,6 +21,7 @@ import PublicQuotePage from "./pages/PublicQuotePage";
 import PublicRequestPage from "./pages/PublicRequestPage";
 import QuoteDetail from "./pages/QuoteDetail";
 import QuotesPage from "./pages/QuotesPage";
+import ReportsPage from "./pages/ReportsPage";
 import RequestDetail from "./pages/RequestDetail";
 import RequestsPage from "./pages/RequestsPage";
 import SchedulePage from "./pages/SchedulePage";
@@ -57,6 +58,7 @@ const PRIVATE = [
   // Invoices are money too. They are made from a job or an accepted quote, on those pages.
   ["/invoices", InvoicesPage, "owner"],
   ["/invoices/:id", InvoiceDetail, "owner"],
+  ["/reports", ReportsPage, "owner"],
   ["/settings", SettingsPage, "owner"],
   ["/my-jobs", MyJobsPage, "employee"],
   ["/my-jobs/:id", MyJobDetail, "employee"],

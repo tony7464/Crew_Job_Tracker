@@ -492,10 +492,11 @@ function Linked({ invoice }) {
 }
 
 // Email again, revise, void, and mark paid, for a sent invoice. Revise and void ask first.
-function SentActions({ invoice, onResend, onRevise, onVoid, onMarkPaid }) {
+function SentActions({ invoice, onResend, onRevise, onVoid, onMarkPaid, onRemind }) {
   const [busy, setBusy] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [error, setError] = useState(null);
+  const [reminded, setReminded] = useState(null);
 
   async function run(kind, action) {
     setBusy(kind);
@@ -549,6 +550,16 @@ function SentActions({ invoice, onResend, onRevise, onVoid, onMarkPaid }) {
             {busy === "resend" ? "Sending…" : "Email it again"}
           </Button>
         )}
+        {invoice.customer_email && invoice.overdue && (
+          <Button
+            variant="secondary"
+            onClick={() => run("remind", async () => setReminded(await onRemind()))}
+            disabled={Boolean(busy)}
+          >
+            <MailIcon />
+            {busy === "remind" ? "Sending…" : "Send reminder"}
+          </Button>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button variant="secondary" onClick={() => setConfirm("revise")} disabled={Boolean(busy)}>
             Revise
@@ -558,6 +569,19 @@ function SentActions({ invoice, onResend, onRevise, onVoid, onMarkPaid }) {
           </Button>
         </div>
       </div>
+      {reminded && (
+        <p className="text-xs text-muted">
+          {reminded.email_delivery === "log"
+            ? "Email is not set up yet, so the reminder was only written to the server log."
+            : `Reminder sent to ${invoice.customer_email}.`}
+        </p>
+      )}
+      {invoice.last_reminder_at && !reminded && (
+        <p className="text-xs text-muted">
+          Last reminder {new Date(invoice.last_reminder_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          {invoice.reminders_sent ? ` · ${invoice.reminders_sent} sent automatically` : ""}
+        </p>
+      )}
       <ErrorMessage error={error} />
     </div>
   );
@@ -620,7 +644,7 @@ function MarkPaidDialog({ invoice, onClose, onConfirm }) {
   );
 }
 
-function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMarkPaid }) {
+function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMarkPaid, onRemind }) {
   const paid = invoice.status === "paid";
   return (
     <div className="space-y-6">
@@ -681,7 +705,14 @@ function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMar
             <CopyLink url={invoice.url} label="Pay link" openLabel="Open public page" />
             {invoice.status === "sent" && (
               <div className="mt-4 border-t border-border pt-4">
-                <SentActions invoice={invoice} onResend={onResend} onRevise={onRevise} onVoid={onVoid} onMarkPaid={onMarkPaid} />
+                <SentActions
+                  invoice={invoice}
+                  onResend={onResend}
+                  onRevise={onRevise}
+                  onVoid={onVoid}
+                  onMarkPaid={onMarkPaid}
+                  onRemind={onRemind}
+                />
               </div>
             )}
           </Card>
@@ -743,6 +774,12 @@ function InvoiceView({ id }) {
     const result = await api(invoicePath(id, "/send"), { method: "POST" });
     setSendResult(result);
     setData(result.invoice);
+  }
+
+  async function remind() {
+    const result = await api(invoicePath(id, "/remind"), { method: "POST" });
+    setData(result.invoice);
+    return result;
   }
 
   async function revise() {
@@ -821,6 +858,7 @@ function InvoiceView({ id }) {
           onRevise={revise}
           onVoid={voidInvoice}
           onMarkPaid={() => setMarkingPaid(true)}
+          onRemind={remind}
         />
       )}
       {markingPaid && <MarkPaidDialog invoice={invoice} onClose={() => setMarkingPaid(false)} onConfirm={markPaid} />}
