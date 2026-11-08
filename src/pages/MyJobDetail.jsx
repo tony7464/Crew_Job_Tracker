@@ -4,6 +4,7 @@ import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
+import ClockCard from "../components/time/ClockCard";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
 import { PersonChips } from "../components/ui/Avatar";
@@ -16,6 +17,7 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { buttonClass } from "../components/ui/styles";
 import { useAsync } from "../hooks";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
+import { notifyClockChanged } from "../utils/timeEntries";
 
 export default function MyJobDetail() {
   const { id } = useParams();
@@ -36,6 +38,8 @@ function MyJobDetailView({ id }) {
     setSaveError(null);
     try {
       setData(await api(`/api/jobs/${id}`, { method: "PATCH", body: { status: "completed" } }));
+      // Completing a job clocks you out of it.
+      notifyClockChanged();
     } catch (err) {
       setSaveError(err);
     } finally {
@@ -111,6 +115,7 @@ function MyJobDetailView({ id }) {
               )}
             </div>
           </Card>
+          <ClockCard jobId={job.id} reloadKey={job.status} />
           <JobPhotos
             jobId={job.id}
             reloadKey={photosKey}

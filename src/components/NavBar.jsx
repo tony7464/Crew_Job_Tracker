@@ -18,11 +18,19 @@ const OWNER_LINKS = [
   ["/quotes", "Quotes"],
   ["/invoices", "Invoices"],
   ["/employees", "Employees"],
+  ["/timesheets", "Timesheets"],
 ];
 
-// The owner's top bar has no room for every link, so these two share a Billing
+// The owner's top bar has no room for every link, so related links share a small
 // menu there. The phone menu lists them as plain links.
-const BILLING_LINKS = new Set(["/quotes", "/invoices"]);
+const LINK_GROUPS = [
+  ["Billing", new Set(["/quotes", "/invoices"])],
+  ["Team", new Set(["/employees", "/timesheets"])],
+];
+
+function groupOf(path) {
+  return LINK_GROUPS.find(([, paths]) => paths.has(path));
+}
 
 // Settings sits beside the account link on wide screens, and in the phone menu.
 const SETTINGS_LINK = ["/settings", "Settings"];
@@ -32,6 +40,7 @@ function linksFor(user) {
   return [
     ["/my-jobs", "My jobs"],
     ["/calendar", "Calendar"],
+    ["/my-hours", "My hours"],
     ...(canSeeTeamSchedule(user) ? [["/schedule", "Team schedule"]] : []),
     ...(hasClientAccess(user) ? [["/clients", "Clients"]] : []),
     ...(canSeeRequests(user) ? [["/requests", "Requests"]] : []),
@@ -58,8 +67,8 @@ function LinkLabel({ to, label, unread }) {
   );
 }
 
-// A small dropdown with the billing links, in the top bar.
-function BillingMenu({ links, linkClass, pathname }) {
+// A small dropdown with a group of links, in the top bar.
+function GroupMenu({ label, links, linkClass, pathname }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const active = links.some(([to]) => pathname === to || pathname.startsWith(`${to}/`));
@@ -90,7 +99,7 @@ function BillingMenu({ links, linkClass, pathname }) {
         onClick={() => setOpen((value) => !value)}
         className={cx(linkClass({ isActive: active }), "inline-flex items-center gap-1")}
       >
-        Billing
+        {label}
         <ChevronDownIcon className={cx("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
       </button>
       {open && (
@@ -167,10 +176,11 @@ export default function NavBar() {
         {!loading && user && (
           <nav aria-label="Main" className="ml-1 hidden items-center gap-0.5 md:flex lg:ml-6 lg:gap-1">
             {linksFor(user).map(([to, label], index, links) => {
-              const billing = links.filter(([path]) => BILLING_LINKS.has(path));
-              if (billing.length > 1 && BILLING_LINKS.has(to)) {
-                return to === billing[0][0] ? (
-                  <BillingMenu key="billing" links={billing} linkClass={desktopLink} pathname={pathname} />
+              const group = groupOf(to);
+              const members = group ? links.filter(([path]) => group[1].has(path)) : [];
+              if (members.length > 1) {
+                return to === members[0][0] ? (
+                  <GroupMenu key={group[0]} label={group[0]} links={members} linkClass={desktopLink} pathname={pathname} />
                 ) : null;
               }
               return (

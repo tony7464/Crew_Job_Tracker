@@ -7,6 +7,7 @@ import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
+import JobTimeCard from "../components/time/JobTimeCard";
 import Loading from "../components/Loading";
 import { PersonChips } from "../components/ui/Avatar";
 import { InvoiceStatusBadge, PaidBadge, StatusBadge } from "../components/ui/Badge";
@@ -137,6 +138,7 @@ function JobDetailView({ id }) {
         </Card>
         <div className="space-y-6 lg:col-span-2">
           <InvoiceCard job={job} />
+          <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
           <JobPhotos
             jobId={job.id}
             reloadKey={photosKey}
