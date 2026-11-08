@@ -115,10 +115,17 @@ export default function VisitQuoteCard({ quoteId, visitId, onSent }) {
 }
 
 function SentNote({ result }) {
-  if (result.email === "queued") return <Alert tone="success">Emailed to {result.quote.customer_email}.</Alert>;
+  const emailed = result.email === "queued";
+  const texted = result.sms === "queued" && result.sms_delivery === "twilio";
+  if (emailed || texted) {
+    const how = [texted && `texted to ${result.quote.customer_phone}`, emailed && `emailed to ${result.quote.customer_email}`]
+      .filter(Boolean)
+      .join(" and ");
+    return <Alert tone="success">The quote was {how}.</Alert>;
+  }
   return (
     <Alert tone="info">
-      Sent without an email. Show the customer the quote on your phone, or copy the link and text it to them.
+      The customer wasn't sent the link. Show them the quote on your phone, or copy the link and send it yourself.
     </Alert>
   );
 }

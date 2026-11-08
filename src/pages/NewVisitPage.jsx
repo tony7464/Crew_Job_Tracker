@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
-import { Input, Select, TextArea } from "../components/Field";
+import { Checkbox, Input, Select, TextArea } from "../components/Field";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
 import { Avatar } from "../components/ui/Avatar";
@@ -64,6 +64,11 @@ export default function NewVisitPage() {
     crew: isOwner(user) ? [] : [user.id],
     notes: "",
   }));
+  // Text and email the customer the confirmation (the business's default; changeable per booking).
+  const [notify, setNotify] = useState(() => {
+    const on = user.visit_confirmations !== false;
+    return { sms: on, email: on };
+  });
   const [errors, setErrors] = useState({});
   const [matches, setMatches] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -139,6 +144,7 @@ export default function NewVisitPage() {
       duration_minutes: Number(visit.duration_minutes),
       employee_ids: visit.crew,
       notes: visit.notes.trim() || null,
+      notify,
     };
     if (visit.service_type.trim()) body.service_type = visit.service_type.trim();
     if (chosen) body.client_id = chosen.id;
@@ -213,6 +219,8 @@ export default function NewVisitPage() {
           who={chosen ? { ...chosen, existing: true } : serviceRequest ? { ...serviceRequest, request: true } : customer}
           visit={visit}
           setVisit={setVisit}
+          notify={notify}
+          setNotify={setNotify}
           errors={errors}
           submitting={submitting}
           submitError={submitError}
@@ -224,7 +232,15 @@ export default function NewVisitPage() {
           onBook={() => book()}
         />
       )}
-      {step === "done" && result && <DoneStep user={user} result={result} onAnother={startOver} />}
+      {step === "done" && result && (
+        <DoneStep
+          user={user}
+          result={result}
+          phone={(chosen || serviceRequest || customer).phone}
+          email={(chosen || serviceRequest || customer).email}
+          onAnother={startOver}
+        />
+      )}
     </div>
   );
 }
@@ -399,7 +415,7 @@ function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUs
   );
 }
 
-function VisitStep({ user, today, who, visit, setVisit, errors, submitting, submitError, onBack, onBook }) {
+function VisitStep({ user, today, who, visit, setVisit, notify, setNotify, errors, submitting, submitError, onBack, onBook }) {
   const { data, error } = useAsync(api, `/api/schedule/team?start=${visit.date}&end=${visit.date}`);
   const set = (key) => (event) => setVisit((current) => ({ ...current, [key]: event.target.value }));
   const employees = (data?.employees || []).filter((person) => person.is_active);
@@ -526,6 +542,24 @@ function VisitStep({ user, today, who, visit, setVisit, errors, submitting, subm
           </div>
         )}
       </Card>
+      <Card title="Tell the customer" description="The date, time, and who's coming. Never prices.">
+        <div className="space-y-3">
+          <Checkbox
+            label={who.phone ? `Text ${who.phone}` : "Text them"}
+            description={who.phone ? "Plus a reminder the day before, if that's on in Settings." : "No phone number for them."}
+            checked={Boolean(who.phone) && notify.sms}
+            disabled={!who.phone}
+            onChange={(event) => setNotify((current) => ({ ...current, sms: event.target.checked }))}
+          />
+          <Checkbox
+            label={who.email ? `Email ${who.email}` : "Email them"}
+            description={who.email ? undefined : "No email address for them."}
+            checked={Boolean(who.email) && notify.email}
+            disabled={!who.email}
+            onChange={(event) => setNotify((current) => ({ ...current, email: event.target.checked }))}
+          />
+        </div>
+      </Card>
       <Card title="Notes for the crew (optional)">
         <TextArea
           value={visit.notes}
@@ -549,7 +583,53 @@ function VisitStep({ user, today, who, visit, setVisit, errors, submitting, subm
   );
 }
 
-function DoneStep({ user, result, onAnother }) {
+// What happened to the confirmation text and email, in plain words.
+function MessageResults({ result, phone, email }) {
+  const { messages, delivery, message_preview: preview } = result;
+  if (!messages) return null;
+  const lines = [];
+  const textLink = phone && preview ? `sms:${phone}?&body=${encodeURIComponent(preview)}` : null;
+  if (messages.sms === "queued") {
+    lines.push(
+      delivery.sms === "twilio"
+        ? ["success", `Texted the details to ${phone}.`]
+        : ["warning", "Texting isn't set up yet, so no text went out.", textLink],
+    );
+  } else if (messages.sms === "skipped_opted_out") {
+    lines.push(["info", "Not texted: they asked not to get texts."]);
+  } else if (messages.sms === "limit") {
+    lines.push(["warning", "Not texted: today's text limit for your business is used up.", textLink]);
+  }
+  if (messages.email === "queued") {
+    lines.push(
+      delivery.email === "resend"
+        ? ["success", `Emailed the details to ${email}.`]
+        : ["warning", "Email isn't set up yet, so no email went out."],
+    );
+  }
+  if (messages.sms !== "queued" && messages.email !== "queued" && !lines.length) {
+    lines.push(["info", "The customer was not sent the details.", textLink]);
+  }
+  return (
+    <div className="space-y-2">
+      {lines.map(([tone, text, link]) => (
+        <Alert key={text} tone={tone}>
+          {text}
+          {link && (
+            <>
+              {" "}
+              <a href={link} className="font-medium underline">
+                Text them from your phone
+              </a>
+            </>
+          )}
+        </Alert>
+      ))}
+    </div>
+  );
+}
+
+function DoneStep({ user, result, phone, email, onAnother }) {
   const [copied, setCopied] = useState(false);
   const { visit, confirmation, client } = result;
   const path = isOwner(user) ? `/jobs/${visit.id}` : `/my-jobs/${visit.id}`;
@@ -606,6 +686,7 @@ function DoneStep({ user, result, onAnother }) {
           </div>
         </div>
       </Card>
+      <MessageResults result={result} phone={phone} email={email} />
       {client.created && (
         <Alert tone="success">{client.name} was added to your clients.</Alert>
       )}
