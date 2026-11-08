@@ -26,6 +26,7 @@ import RequestDetail from "./pages/RequestDetail";
 import RequestsPage from "./pages/RequestsPage";
 import SchedulePage from "./pages/SchedulePage";
 import SettingsPage from "./pages/SettingsPage";
+import ShoppingListPage from "./pages/ShoppingListPage";
 import SignupPage from "./pages/SignupPage";
 import TimesheetsPage from "./pages/TimesheetsPage";
 import { homePath } from "./utils/roles";
@@ -64,6 +65,8 @@ const PRIVATE = [
   ["/my-jobs/:id", MyJobDetail, "employee"],
   ["/calendar", CalendarPage, "employee"],
   ["/my-hours", TimesheetsPage, "employee"],
+  // Materials still to pick up, across the jobs each person can see.
+  ["/shopping", ShoppingListPage, undefined],
   ["/account", AccountPage, undefined],
 ];
 

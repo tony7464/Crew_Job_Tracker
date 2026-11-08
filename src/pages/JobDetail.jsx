@@ -6,6 +6,7 @@ import CreateInvoiceButton from "../components/CreateInvoiceButton";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import ChecklistCard from "../components/ChecklistCard";
+import MaterialsCard from "../components/MaterialsCard";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
 import OnMyWayCard from "../components/OnMyWayCard";
@@ -156,6 +157,7 @@ function JobDetailView({ id }) {
           <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />
           <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ChecklistCard key={job.service_type} jobId={job.id} />
+          <MaterialsCard key={job.status} jobId={job.id} />
           <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
           <JobPhotos
             jobId={job.id}
