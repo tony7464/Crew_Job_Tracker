@@ -11,6 +11,7 @@ import { Modal } from "../ui/Modal";
 import Legend from "./Legend";
 import { JobQuickView, LunchQuickView } from "./QuickViews";
 import TeamDay from "./TeamDay";
+import { createJob as addJob } from "../../utils/series";
 
 // FullCalendar is the largest dependency; load it only on pages with a calendar.
 const ScheduleCalendar = lazy(() => import("./ScheduleCalendar"));
@@ -110,7 +111,7 @@ export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKe
   }
 
   async function createJob(body) {
-    await api("/api/jobs", { method: "POST", body });
+    await addJob(body);
     setDialog(null);
     setOwnKey((key) => key + 1);
     onChanged?.();

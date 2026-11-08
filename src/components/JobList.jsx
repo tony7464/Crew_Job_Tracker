@@ -7,7 +7,7 @@ import { PaidBadge, StatusBadge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { DataTable } from "./ui/DataTable";
 import { EmptyState } from "./ui/Feedback";
-import { ClockIcon } from "./ui/Icons";
+import { ClockIcon, RepeatIcon } from "./ui/Icons";
 
 const NO_PENDING = {};
 
@@ -50,9 +50,17 @@ export default function JobList({
   if (!jobs.length) return <EmptyState title={empty} action={emptyAction} />;
 
   const title = (job) => (
-    <Link to={`${linkBase}/${job.id}`} className="font-medium text-fg hover:text-primary hover:underline">
-      {job.service_type}
-    </Link>
+    <span className="inline-flex items-center gap-1.5">
+      <Link to={`${linkBase}/${job.id}`} className="font-medium text-fg hover:text-primary hover:underline">
+        {job.service_type}
+      </Link>
+      {job.repeats && (
+        <span title={job.repeats} className="text-muted">
+          <RepeatIcon className="h-3.5 w-3.5" />
+          <span className="sr-only">{job.repeats}</span>
+        </span>
+      )}
+    </span>
   );
 
   const subtitle = (job) => (

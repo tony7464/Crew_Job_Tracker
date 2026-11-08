@@ -8,7 +8,7 @@ import ClockCard from "../components/time/ClockCard";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
 import { PersonChips } from "../components/ui/Avatar";
-import { StatusBadge } from "../components/ui/Badge";
+import { RepeatBadge, StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState } from "../components/ui/Feedback";
@@ -69,6 +69,7 @@ function MyJobDetailView({ id }) {
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {job.service_type}
             <StatusBadge status={job.status} />
+            {job.repeats && <RepeatBadge text={job.repeats} />}
           </span>
         }
         description={

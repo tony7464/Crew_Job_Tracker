@@ -8,9 +8,10 @@ import JobForm from "../components/JobForm";
 import JobNotes from "../components/JobNotes";
 import JobPhotos from "../components/JobPhotos";
 import JobTimeCard from "../components/time/JobTimeCard";
+import SeriesCard from "../components/SeriesCard";
 import Loading from "../components/Loading";
 import { PersonChips } from "../components/ui/Avatar";
-import { InvoiceStatusBadge, PaidBadge, StatusBadge } from "../components/ui/Badge";
+import { InvoiceStatusBadge, PaidBadge, RepeatBadge, StatusBadge } from "../components/ui/Badge";
 import { ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/Feedback";
@@ -56,6 +57,16 @@ export default function JobDetail() {
 function JobDetailView({ id }) {
   const navigate = useNavigate();
   const jobState = useAsync(api, `/api/jobs/${id}`);
+
+  // After a series change: reload this visit (the series may have updated it). Stopping a
+  // series can remove this visit; then go back to the jobs list.
+  async function seriesChanged({ stopped = false } = {}) {
+    try {
+      jobState.setData(await api(`/api/jobs/${id}`));
+    } catch (err) {
+      if (stopped && err.status === 404) navigate("/jobs");
+    }
+  }
   const clientsState = useAsync(fetchAll, "/api/clients");
   const employeesState = useAsync(api, "/api/employees");
   const error = jobState.error || clientsState.error || employeesState.error;
@@ -93,6 +104,7 @@ function JobDetailView({ id }) {
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {job.service_type}
             <StatusBadge status={job.status} />
+            {job.repeats && <RepeatBadge text={job.repeats} />}
             <PaidBadge paid={job.paid} />
           </span>
         }
@@ -138,6 +150,7 @@ function JobDetailView({ id }) {
         </Card>
         <div className="space-y-6 lg:col-span-2">
           <InvoiceCard job={job} />
+          <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />
           <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
           <JobPhotos
             jobId={job.id}

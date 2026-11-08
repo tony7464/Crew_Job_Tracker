@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useSubmit } from "../hooks";
+import { REPEAT_OPTIONS, parseRepeat } from "../utils/series";
 import {
   DEFAULT_DURATION,
   DURATION_PRESETS,
@@ -37,8 +39,12 @@ function durationOptions(current) {
 
 // employees: the owner's employee list. Leave it out to hide the crew picker.
 // initial: the job being edited, or prefill values (client_id, date, time, duration_minutes).
+// New jobs get a Repeat picker; the body then has repeat: { repeat, every, end_date } or null
+// (see createJob in utils/series.js).
 export default function JobForm({ clients, employees, initial, onSubmit, submitLabel, onCancel }) {
   const { error, submitting, handleSubmit } = useSubmit(onSubmit, !initial);
+  const isNew = !initial?.id;
+  const [repeat, setRepeat] = useState("");
 
   if (!clients.length && !initial?.id) {
     return (
@@ -66,6 +72,11 @@ export default function JobForm({ clients, employees, initial, onSubmit, submitL
       paid: paidByInvoice ? Boolean(initial.paid) : form.get("paid") === "on",
       notes: form.get("notes") || null,
       ...(employees ? { employee_ids: form.getAll("employee_ids").map(Number) } : {}),
+      ...(isNew
+        ? {
+            repeat: parseRepeat(repeat) && { ...parseRepeat(repeat), end_date: form.get("repeat_end") || null },
+          }
+        : {}),
     });
   }
 
@@ -100,6 +111,16 @@ export default function JobForm({ clients, employees, initial, onSubmit, submitL
           ))}
         </Select>
       </div>
+      {isNew && (
+        <div className="grid grid-cols-2 gap-4">
+          <Select label="Repeat" value={repeat} onChange={(event) => setRepeat(event.target.value)}>
+            {REPEAT_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </Select>
+          {repeat && <Input label="Ends on" name="repeat_end" type="date" hint="Optional" />}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="Price ($)"
