@@ -85,8 +85,9 @@ export function sumCents(jobs) {
 }
 
 // Owed money: work that is done (completed) and not paid. Same rule as the server.
+// Estimate visits are free, so they are never owed.
 export function isOwed(job) {
-  return job.status === "completed" && !job.paid;
+  return job.kind !== "estimate" && job.status === "completed" && !job.paid;
 }
 
 // Whole days from one "YYYY-MM-DD" date to a later one (0 if later is not after).

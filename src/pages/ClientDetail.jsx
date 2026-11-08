@@ -11,7 +11,7 @@ import { Badge } from "../components/ui/Badge";
 import { Button, ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState } from "../components/ui/Feedback";
-import { DollarIcon, MailIcon, MapPinIcon, PhoneIcon, PlusIcon } from "../components/ui/Icons";
+import { CalendarIcon, DollarIcon, MailIcon, MapPinIcon, PhoneIcon, PlusIcon } from "../components/ui/Icons";
 import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { useAuth } from "../context/useAuth";
 import { useAsync } from "../hooks";
@@ -142,16 +142,24 @@ function ClientDetailView({ id }) {
         }
         back={back}
         actions={
-          owner && !client.archived && (
+          !client.archived && (
             <>
-              <ButtonLink to={`/quotes/new?client_id=${client.id}`} variant="secondary">
-                <DollarIcon />
-                Create quote
+              <ButtonLink to={`/visits/new?client_id=${client.id}`} variant={owner ? "secondary" : "primary"}>
+                <CalendarIcon />
+                Schedule estimate visit
               </ButtonLink>
-              <ButtonLink to={`/jobs?client=${client.id}`}>
-                <PlusIcon />
-                Schedule a job
-              </ButtonLink>
+              {owner && (
+                <ButtonLink to={`/quotes/new?client_id=${client.id}`} variant="secondary">
+                  <DollarIcon />
+                  Create quote
+                </ButtonLink>
+              )}
+              {owner && (
+                <ButtonLink to={`/jobs?client=${client.id}`}>
+                  <PlusIcon />
+                  Schedule a job
+                </ButtonLink>
+              )}
             </>
           )
         }

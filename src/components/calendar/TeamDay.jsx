@@ -133,7 +133,7 @@ function jobLabel(item, column) {
   const minutes = job.duration_minutes ?? DEFAULT_DURATION;
   const parts = [
     `${formatTime(job.time)}, ${minutes} minutes`,
-    job.service_type,
+    job.kind === "estimate" ? `Estimate visit: ${job.service_type}` : job.service_type,
     job.client_name,
     column.person ? column.person.username : "Unassigned",
     job.status !== "scheduled" ? job.status : null,
@@ -164,6 +164,7 @@ function JobTitle({ job }) {
   return (
     <span className="cjt-ev-title">
       {job.status === "completed" && <CheckIcon className="cjt-check" />}
+      {job.kind === "estimate" && "Estimate · "}
       {job.service_type}
     </span>
   );
@@ -210,7 +211,7 @@ function Block({ item, column, startHour, onJobClick, onLunchClick }) {
   return (
     <button
       type="button"
-      className={cx("cjt-team-ev", `cjt-${job.status}`, !column.person && "cjt-team-open")}
+      className={cx("cjt-team-ev", `cjt-${job.status}`, !column.person && "cjt-team-open", job.kind === "estimate" && "cjt-estimate")}
       style={{ ...position, backgroundColor: tint(column.color, cancelled ? 8 : 18), borderLeftColor: column.color }}
       onClick={(event) => {
         event.stopPropagation();

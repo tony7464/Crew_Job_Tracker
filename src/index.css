@@ -593,6 +593,12 @@
   opacity: 0.6;
 }
 
+/* Estimate visits: a dashed edge, so they read apart from paid work at a glance. */
+.cjt-calendar .fc .cjt-estimate,
+.cjt-team-ev.cjt-estimate {
+  border-style: dashed;
+}
+
 .cjt-team-ev.cjt-cancelled .cjt-ev-title,
 .cjt-team-row.cjt-cancelled .cjt-ev-title {
   text-decoration: line-through;

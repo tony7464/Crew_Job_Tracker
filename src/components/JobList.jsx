@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { DEFAULT_DURATION, formatDay, formatMoney, formatTimeRange, STATUSES, statusLabel } from "../utils/format";
 import MapLink from "./MapLink";
 import { AvatarStack } from "./ui/Avatar";
-import { PaidBadge, StatusBadge } from "./ui/Badge";
+import { Badge, PaidBadge, StatusBadge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { DataTable } from "./ui/DataTable";
 import { EmptyState } from "./ui/Feedback";
 import { ClockIcon, RepeatIcon } from "./ui/Icons";
+import { isEstimate } from "../utils/visits";
 
 const NO_PENDING = {};
 
@@ -54,6 +55,7 @@ export default function JobList({
       <Link to={`${linkBase}/${job.id}`} className="font-medium text-fg hover:text-primary hover:underline">
         {job.service_type}
       </Link>
+      {isEstimate(job) && <Badge tone="primary">Estimate</Badge>}
       {job.repeats && (
         <span title={job.repeats} className="text-muted">
           <RepeatIcon className="h-3.5 w-3.5" />
@@ -92,8 +94,14 @@ export default function JobList({
       <StatusBadge status={job.status} />
     );
 
+  // Estimate visits are free: no price to show and nothing to pay.
+  const price = (job) =>
+    isEstimate(job) ? <span className="text-muted">Free</span> : <span className="tabular-nums">{formatMoney(job.price_cents)}</span>;
+
   const paidControl = (job) =>
-    onUpdate ? (
+    isEstimate(job) ? (
+      <span className="text-sm text-muted">—</span>
+    ) : onUpdate ? (
       <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
         <input
           type="checkbox"
@@ -145,7 +153,7 @@ export default function JobList({
     },
     { key: "crew", header: "Crew", cell: (job) => <AvatarStack people={job.assignees} /> },
     ...(showMoney
-      ? [{ key: "price", header: "Price", align: "right", cell: (job) => <span className="tabular-nums">{formatMoney(job.price_cents)}</span> }]
+      ? [{ key: "price", header: "Price", align: "right", cell: price }]
       : []),
     { key: "status", header: "Status", cell: statusControl },
     ...(showMoney ? [{ key: "paid", header: "Paid", cell: paidControl }] : []),
@@ -171,8 +179,8 @@ export default function JobList({
           <AvatarStack people={job.assignees} />
           {showMoney && (
             <span className="flex items-center gap-2 text-sm">
-              <span className="font-medium tabular-nums">{formatMoney(job.price_cents)}</span>
-              {!onUpdate && <PaidBadge paid={job.paid} />}
+              <span className="font-medium">{price(job)}</span>
+              {!onUpdate && !isEstimate(job) && <PaidBadge paid={job.paid} />}
             </span>
           )}
         </div>

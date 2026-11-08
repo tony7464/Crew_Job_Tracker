@@ -87,7 +87,7 @@ function buildEvents(data, { mode, selfId, hidden, month }) {
         backgroundColor: tint(color, job.status === "cancelled" ? 8 : 18),
         borderColor: color,
         textColor: "var(--text)",
-        classNames: ["cjt-job", `cjt-${job.status}`],
+        classNames: ["cjt-job", `cjt-${job.status}`, ...(job.kind === "estimate" ? ["cjt-estimate"] : [])],
         editable: owner,
         extendedProps: { kind: "job", job, color },
       };
@@ -174,6 +174,7 @@ function renderEvent(arg) {
   const title = (
     <span className="cjt-ev-title">
       {done && <CheckIcon className="cjt-check" />}
+      {job.kind === "estimate" && "Estimate · "}
       {job.service_type}
     </span>
   );
@@ -192,7 +193,10 @@ function renderEvent(arg) {
   // Month: one compact line per job, a dot in the crew color, the start time, the service.
   if (view.startsWith("dayGrid")) {
     return (
-      <span className="cjt-month-row" title={`${job.service_type}${job.client_name ? ` · ${job.client_name}` : ""}`}>
+      <span
+        className="cjt-month-row"
+        title={`${job.kind === "estimate" ? "Estimate · " : ""}${job.service_type}${job.client_name ? ` · ${job.client_name}` : ""}`}
+      >
         <span className="cjt-month-dot" style={{ backgroundColor: color }} />
         <span className="cjt-ev-time">{arg.timeText}</span>
         {title}

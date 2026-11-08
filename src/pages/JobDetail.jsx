@@ -13,9 +13,10 @@ import OnMyWayCard from "../components/OnMyWayCard";
 import JobTimeCard from "../components/time/JobTimeCard";
 import SeriesCard from "../components/SeriesCard";
 import SignatureCard from "../components/SignatureCard";
+import VisitCard from "../components/VisitCard";
 import Loading from "../components/Loading";
 import { PersonChips } from "../components/ui/Avatar";
-import { InvoiceStatusBadge, PaidBadge, RepeatBadge, StatusBadge } from "../components/ui/Badge";
+import { Badge, InvoiceStatusBadge, PaidBadge, RepeatBadge, StatusBadge } from "../components/ui/Badge";
 import { ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/Feedback";
@@ -23,6 +24,7 @@ import { CalendarIcon, ClockIcon, DollarIcon } from "../components/ui/Icons";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsync } from "../hooks";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
+import { isEstimate } from "../utils/visits";
 
 // Bill the job, or open the invoice it already has. A paid job's invoice decides its paid flag.
 function InvoiceCard({ job }) {
@@ -99,6 +101,7 @@ function JobDetailView({ id }) {
   if (!job || !clients || !employees) return <Loading />;
   const crewKey = job.assignees.map((person) => person.id).join(",");
   const minutes = job.duration_minutes ?? DEFAULT_DURATION;
+  const estimate = isEstimate(job);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -109,7 +112,7 @@ function JobDetailView({ id }) {
             {job.service_type}
             <StatusBadge status={job.status} />
             {job.repeats && <RepeatBadge text={job.repeats} />}
-            <PaidBadge paid={job.paid} />
+            {estimate ? <Badge tone="primary">Estimate visit</Badge> : <PaidBadge paid={job.paid} />}
           </span>
         }
         description={
@@ -121,6 +124,11 @@ function JobDetailView({ id }) {
               {job.quote_id && (
                 <Link to={`/quotes/${job.quote_id}`} className="link w-fit">
                   From quote #{job.quote_id}
+                </Link>
+              )}
+              {job.from_visit && (
+                <Link to={`/jobs/${job.from_visit.id}`} className="link w-fit">
+                  From estimate visit on {formatDay(job.from_visit.date)}
                 </Link>
               )}
             </span>
@@ -142,19 +150,25 @@ function JobDetailView({ id }) {
         </div>
       </PageHeader>
       <div className="grid items-start gap-6 lg:grid-cols-5">
-        <Card title="Edit job" className="lg:col-span-3">
-          <JobForm
-            key={`${job.id}-${job.status}-${job.paid}-${job.invoice?.status}-${job.date}-${job.time}-${minutes}-${crewKey}`}
-            clients={clients}
-            employees={employees}
-            initial={job}
-            onSubmit={save}
-            submitLabel="Save changes"
-          />
-        </Card>
+        {estimate ? (
+          <div className="lg:col-span-3">
+            <VisitCard job={job} onChanged={jobState.setData} canEdit canOpenQuote />
+          </div>
+        ) : (
+          <Card title="Edit job" className="lg:col-span-3">
+            <JobForm
+              key={`${job.id}-${job.status}-${job.paid}-${job.invoice?.status}-${job.date}-${job.time}-${minutes}-${crewKey}`}
+              clients={clients}
+              employees={employees}
+              initial={job}
+              onSubmit={save}
+              submitLabel="Save changes"
+            />
+          </Card>
+        )}
         <div className="space-y-6 lg:col-span-2">
-          <InvoiceCard job={job} />
-          <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />
+          {!estimate && <InvoiceCard job={job} />}
+          {!estimate && <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />}
           <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ChecklistCard key={job.service_type} jobId={job.id} />
           <MaterialsCard key={job.status} jobId={job.id} />
@@ -165,7 +179,7 @@ function JobDetailView({ id }) {
             onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
             onPhotosChanged={() => setNotesKey((key) => key + 1)}
           />
-          <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />
+          {!estimate && <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />}
           <JobNotes
             jobId={job.id}
             reloadKey={notesKey}

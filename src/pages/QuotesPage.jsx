@@ -152,10 +152,15 @@ export default function QuotesPage() {
             : "Prices you send to clients to accept online"
         }
         actions={
-          <ButtonLink to="/quotes/new">
-            <PlusIcon />
-            New quote
-          </ButtonLink>
+          <>
+            <ButtonLink to="/quotes/new" variant="secondary">
+              Quote without a visit
+            </ButtonLink>
+            <ButtonLink to="/visits/new">
+              <PlusIcon />
+              New quote
+            </ButtonLink>
+          </>
         }
       />
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
