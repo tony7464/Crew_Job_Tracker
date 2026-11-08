@@ -25,6 +25,10 @@ const RETURN_MESSAGES = {
   returned: ["info", "Back from Stripe. The status below is what Stripe reports now."],
   error: ["danger", "Stripe could not be reached. Try again in a minute."],
   not_connected: ["warning", "Stripe is not connected. Connect it below."],
+  linked: ["success", "Your Stripe account is linked. The status below is what Stripe reports now."],
+  link_cancelled: ["info", "Linking was cancelled. Nothing changed."],
+  link_error: ["danger", "Your Stripe account could not be linked. Start again from this page."],
+  link_in_use: ["danger", "That Stripe account is already linked to another business on Crew Job Tracker."],
 };
 
 function formatChecked(iso) {
@@ -61,6 +65,9 @@ function StripeError({ error }) {
 }
 
 function hint(stripe) {
+  if (stripe.account_source === "linked" && stripe.status === "onboarding_incomplete") {
+    return "Stripe needs more details before this account can take payments. Finish them in your Stripe Dashboard, then refresh.";
+  }
   if (stripe.status === "onboarding_incomplete") {
     return stripe.details_submitted
       ? "Your details are in. Stripe is reviewing them, or needs a little more. Continue onboarding to check."
@@ -104,7 +111,9 @@ export default function SettingsPaymentsCard() {
 
   // The page shows the saved status right away, then asks Stripe for the latest
   // once. Coming back from Stripe already refreshed on the server.
-  const autoRefresh = Boolean(stripe?.configured && stripe?.connected && returned !== "returned");
+  const autoRefresh = Boolean(
+    stripe?.configured && stripe?.account_usable && !["returned", "linked"].includes(returned),
+  );
   const [autoDone, setAutoDone] = useState(false);
   useEffect(() => {
     if (!autoRefresh || refreshedOnLoad.current) return;
@@ -132,6 +141,18 @@ export default function SettingsPaymentsCard() {
     }
   }
 
+  async function link() {
+    setConnecting(true);
+    setError(null);
+    try {
+      const result = await api(`${PATH}/link`, { method: "POST" });
+      window.location.assign(result.url);
+    } catch (err) {
+      setError(err);
+      setConnecting(false);
+    }
+  }
+
   async function disconnect() {
     await api(PATH, { method: "DELETE" });
     setError(null);
@@ -141,27 +162,43 @@ export default function SettingsPaymentsCard() {
   if (loadError) return <ErrorMessage error={loadError} />;
   if (!stripe) return <Loading variant="list" label="Loading payments…" />;
 
-  const status = STATUS[stripe.status] || STATUS.not_connected;
+  // An account saved in another mode (say test, now that payments are live) does not count.
+  const usable = stripe.connected && stripe.account_usable;
+  const otherMode = stripe.connected && !stripe.account_usable && stripe.configured;
+  const linked = usable && stripe.account_source === "linked";
+  const status = usable ? STATUS[stripe.status] || STATUS.not_connected : STATUS.not_connected;
   const checked = formatChecked(stripe.checked_at);
   const returnMessage = RETURN_MESSAGES[returned];
-  const modeBadge = stripe.configured && (
-    <Badge tone="warning" title="No real money moves">
-      {stripe.mode === "mock" ? "Mock mode" : "Test mode"}
-    </Badge>
-  );
+  const modeBadge =
+    stripe.configured &&
+    (stripe.live ? (
+      <Badge tone="success" title="Clients pay real money">Live</Badge>
+    ) : (
+      <Badge tone="warning" title="No real money moves">
+        {stripe.mode === "mock" ? "Mock mode" : "Test mode"}
+      </Badge>
+    ));
 
   return (
     <Card
       title="Payments"
-      description="Connect a Stripe account so your business can be paid. Stripe runs the sign-up form and holds your bank details."
+      description="Clients pay your invoices by card, straight into your own Stripe account. Stripe holds your bank details and pays out to you."
       actions={modeBadge}
     >
       <div className="space-y-5">
         {returnMessage && <Alert tone={returnMessage[0]}>{returnMessage[1]}</Alert>}
 
         {!stripe.configured && (
-          <Alert tone={stripe.message?.startsWith("Live") ? "danger" : "info"} title="Stripe not configured">
+          <Alert tone={/live/i.test(stripe.message || "") ? "danger" : "info"} title="Stripe not configured">
             {stripe.message}
+          </Alert>
+        )}
+
+        {otherMode && (
+          <Alert tone="warning" title={`This Stripe account was set up in ${stripe.account_mode} mode`}>
+            {stripe.live
+              ? "Payments are live now, so connect your Stripe account again to take real payments."
+              : "Connect a Stripe account for this mode to take payments."}
           </Alert>
         )}
 
@@ -172,8 +209,9 @@ export default function SettingsPaymentsCard() {
           )}
         </div>
 
-        {stripe.connected && (
+        {usable && (
           <>
+            {linked && <p className="text-sm">Your own Stripe account is linked to Crew Job Tracker.</p>}
             <ul className="space-y-1.5" aria-label="Stripe account status">
               <Check done={stripe.details_submitted}>Details submitted</Check>
               <Check done={stripe.charges_enabled}>Charges enabled</Check>
@@ -192,22 +230,34 @@ export default function SettingsPaymentsCard() {
 
         <StripeError error={error} />
 
-        {stripe.configured && (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {stripe.status !== "payouts_enabled" && (
+        {stripe.configured && !usable && (
+          <div className="space-y-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Button onClick={connect} disabled={connecting} className="w-full sm:w-auto">
-                {connecting
-                  ? "Opening Stripe…"
-                  : stripe.connected
-                    ? "Continue onboarding"
-                    : "Connect Stripe"}
+                {connecting ? "Opening Stripe…" : "Create a Stripe account"}
+              </Button>
+              {stripe.link_available && (
+                <Button variant="secondary" onClick={link} disabled={connecting} className="w-full sm:w-auto">
+                  I already have a Stripe account
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted">
+              Either way the money goes to your Stripe account and your bank. Crew Job Tracker never holds it and takes no fee.
+            </p>
+          </div>
+        )}
+
+        {stripe.configured && usable && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {!linked && stripe.status !== "payouts_enabled" && (
+              <Button onClick={connect} disabled={connecting} className="w-full sm:w-auto">
+                {connecting ? "Opening Stripe…" : "Continue onboarding"}
               </Button>
             )}
-            {stripe.connected && (
-              <Button variant="secondary" onClick={refresh} disabled={checking} className="w-full sm:w-auto">
-                {checking ? "Refreshing…" : "Refresh status"}
-              </Button>
-            )}
+            <Button variant="secondary" onClick={refresh} disabled={checking} className="w-full sm:w-auto">
+              {checking ? "Refreshing…" : "Refresh status"}
+            </Button>
           </div>
         )}
 
@@ -217,7 +267,11 @@ export default function SettingsPaymentsCard() {
               label="Disconnect Stripe"
               confirmLabel="Disconnect"
               busyLabel="Disconnecting…"
-              warning="This app forgets the Stripe account. The account itself stays in Stripe, and connecting again makes a new one."
+              warning={
+                stripe.account_source === "linked"
+                  ? "Crew Job Tracker is unlinked from your Stripe account. The account and its money stay yours; clients cannot pay online until you connect again."
+                  : "This app forgets the Stripe account. The account itself stays in Stripe, and connecting again makes a new one."
+              }
               onConfirm={disconnect}
             />
           </div>
