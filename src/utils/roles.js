@@ -20,6 +20,11 @@ export function canSeeRequests(user) {
   return hasClientAccess(user);
 }
 
+// Quoting on site: the owner, and employees the owner lets quote their estimate visits.
+export function canQuote(user) {
+  return isOwner(user) || Boolean(isEmployee(user) && user.can_quote);
+}
+
 export function homePath(user) {
   if (!user) return "/login";
   return isOwner(user) ? "/dashboard" : "/my-jobs";

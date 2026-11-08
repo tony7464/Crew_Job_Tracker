@@ -12,6 +12,7 @@ import { ItemsEditor, QuoteItems, QuoteTotals } from "../components/QuoteLines";
 import { Badge, QuoteStatusBadge, RequestStatusBadge, StatusBadge } from "../components/ui/Badge";
 import { Button, ButtonLink } from "../components/ui/Button";
 import QuotePhotos from "../components/QuotePhotos";
+import VisitPhotoPicker from "../components/quotes/VisitPhotoPicker";
 import { Card } from "../components/ui/Card";
 import { Alert, EmptyState, Spinner } from "../components/ui/Feedback";
 import { BriefcaseIcon, CalendarIcon, InboxIcon, MailIcon, MapPinIcon, PhoneIcon, UsersIcon } from "../components/ui/Icons";
@@ -718,15 +719,16 @@ function QuoteView({ id }) {
   if (error) return <ErrorMessage error={error} />;
   if (!quote) return <Loading />;
 
+  // version: a save made after someone else's (an employee quoting on site) is refused, not lost.
   async function save(body) {
-    const updated = await api(`/api/quotes/${id}`, { method: "PATCH", body });
+    const updated = await api(`/api/quotes/${id}`, { method: "PATCH", body: { ...body, version: quote.version } });
     setData(updated);
     setNotice("Draft saved.");
     setSendResult(null);
   }
 
   async function send(body, dirty) {
-    if (dirty) setData(await api(`/api/quotes/${id}`, { method: "PATCH", body }));
+    if (dirty) setData(await api(`/api/quotes/${id}`, { method: "PATCH", body: { ...body, version: quote.version } }));
     const result = await api(`/api/quotes/${id}/send`, { method: "POST" });
     setNotice(null);
     setSendResult(result);
@@ -796,6 +798,17 @@ function QuoteView({ id }) {
               onChange={changePhotos}
             />
           </Card>
+          {quote.visit && quote.photos_enabled && (
+            <Card title="Photos from the estimate visit" description="Pick the crew's photos to show the client with the price.">
+              <VisitPhotoPicker
+                quoteId={quote.id}
+                visitId={quote.visit.id}
+                quotePhotos={quote.photos || []}
+                maxPhotos={quote.max_photos}
+                onAdded={(photos) => changePhotos(() => photos)}
+              />
+            </Card>
+          )}
           <ConfirmDelete
             label="Delete draft"
             description="Permanently deletes this draft and its photos. Quotes that were sent cannot be deleted."

@@ -27,7 +27,8 @@ function QuoteStatus({ quote }) {
 
 // An estimate visit: its quote, and (for the owner and leads, canEdit) rescheduling,
 // changing who goes, and cancelling. canOpenQuote: the owner, who prices the work.
-export default function VisitCard({ job, onChanged, canEdit, canOpenQuote }) {
+// quotingHere: the quote is priced on this page (VisitQuoteCard), so no "the office prices it" note.
+export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quotingHere = false }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -87,7 +88,7 @@ export default function VisitCard({ job, onChanged, canEdit, canOpenQuote }) {
               </Button>
             ))}
         </div>
-        {!canOpenQuote && quote?.status === "draft" && (
+        {!canOpenQuote && !quotingHere && quote?.status === "draft" && (
           <p className="text-sm text-muted">The office prices the work from your photos, notes, and materials.</p>
         )}
         {saved && (

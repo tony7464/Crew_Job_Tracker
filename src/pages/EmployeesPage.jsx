@@ -103,6 +103,7 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
       password: form.get("password"),
       email: form.get("email") || null,
       can_manage_clients: form.get("can_manage_clients") === "on",
+      can_quote: form.get("can_quote") === "on",
     });
   }
 
@@ -123,7 +124,12 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
       <Checkbox
         name="can_manage_clients"
         label="Client access"
-        description="Can view, add, and edit clients. Never sees prices."
+        description="Can view, add, and edit clients, and book estimate visits. Never sees job prices."
+      />
+      <Checkbox
+        name="can_quote"
+        label="Can quote on site"
+        description="Prices and sends the quote for estimate visits they go on (any visit, with client access)."
       />
       <Alert tone="info">
         Share the username and temporary password with them. They can change the password from Account.
@@ -178,6 +184,7 @@ function EmployeeCard({ employee, onChange }) {
               {employee.is_active ? "Active" : "Inactive"}
             </Badge>
             {employee.can_manage_clients && <Badge tone="primary">Client access</Badge>}
+            {employee.can_quote && <Badge tone="primary">Can quote</Badge>}
           </p>
           <p className="mt-0.5 truncate text-sm text-muted">{employee.email || "No email"}</p>
         </div>
@@ -196,6 +203,14 @@ function EmployeeCard({ employee, onChange }) {
           onClick={() => patch({ can_manage_clients: !employee.can_manage_clients }).catch(() => {})}
         >
           {employee.can_manage_clients ? "Remove client access" : "Allow client access"}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          onClick={() => patch({ can_quote: !employee.can_quote }).catch(() => {})}
+        >
+          {employee.can_quote ? "Stop quoting" : "Allow quoting on site"}
         </Button>
         <Button
           variant="secondary"
