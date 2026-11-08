@@ -48,7 +48,7 @@ function readAsDataUrl(blob) {
   });
 }
 
-// { dataUrl, previewUrl, width, height, bytes } for a picked image file, as a JPEG
+// { blob, dataUrl, previewUrl, width, height, bytes } for a picked image file, as a JPEG
 // at most MAX_SIDE pixels on its long side. Call URL.revokeObjectURL(previewUrl) when done.
 export async function shrinkPhoto(file) {
   if (file.type && !file.type.startsWith("image/")) {
@@ -77,6 +77,7 @@ export async function shrinkPhoto(file) {
   source.close?.();
   const blob = await toBlob(canvas);
   return {
+    blob,
     dataUrl: await readAsDataUrl(blob),
     previewUrl: URL.createObjectURL(blob),
     width: canvas.width,
