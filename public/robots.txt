@@ -1,0 +1,11 @@
+# The landing, pricing, terms, and privacy pages are public. Everything else is behind a
+# login, or is a customer's private link (quotes, pay pages, request forms, invites).
+User-agent: *
+Allow: /$
+Allow: /pricing
+Allow: /terms
+Allow: /privacy
+Allow: /marketing/
+Disallow: /
+
+Sitemap: https://crewjobtrack.com/sitemap.xml

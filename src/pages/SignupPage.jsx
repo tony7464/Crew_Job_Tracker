@@ -1,15 +1,33 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import AuthScreen from "../components/AuthScreen";
 import { Input } from "../components/Field";
+import { TRIAL_DAYS, planById } from "../config/plans";
 import { useAuth } from "../context/useAuth";
+
+// The plan picked on the pricing page, kept for when billing starts (a later update).
+function rememberPlan(plan, yearly) {
+  try {
+    localStorage.setItem("cjt:plan", JSON.stringify({ plan: plan.id, yearly }));
+  } catch {
+    // Storage is off; the plan is picked again later.
+  }
+}
 
 export default function SignupPage() {
   const { signup } = useAuth();
+  const [params] = useSearchParams();
+  const plan = planById(params.get("plan"));
+  const yearly = params.get("billing") === "yearly";
+  if (plan) rememberPlan(plan, yearly);
 
   return (
     <AuthScreen
       title="Create your business account"
-      subtitle="Track clients, jobs, and your crew in one place. Employees get their logins from you."
+      subtitle={
+        plan
+          ? `Start your ${TRIAL_DAYS}-day free trial of the ${plan.name} plan. No card needed.`
+          : `Start your ${TRIAL_DAYS}-day free trial. No card needed. Employees get their logins from you.`
+      }
       submitLabel="Create account"
       onSubmit={(form) =>
         signup({
