@@ -9,6 +9,7 @@ import JobPhotos from "../components/JobPhotos";
 import OnMyWayCard from "../components/OnMyWayCard";
 import SignatureCard from "../components/SignatureCard";
 import VisitCard from "../components/VisitCard";
+import VisitQuoteCard from "../components/quotes/VisitQuoteCard";
 import ClockCard from "../components/time/ClockCard";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
@@ -23,7 +24,7 @@ import { buttonClass } from "../components/ui/styles";
 import { useAsync } from "../hooks";
 import { useAuth } from "../context/useAuth";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
-import { hasClientAccess } from "../utils/roles";
+import { canQuote, hasClientAccess } from "../utils/roles";
 import { isEstimate } from "../utils/visits";
 import { notifyClockChanged } from "../utils/timeEntries";
 
@@ -130,7 +131,24 @@ function MyJobDetailView({ id }) {
             </div>
           </Card>
           {estimate && (
-            <VisitCard job={job} onChanged={setData} canEdit={hasClientAccess(user)} canOpenQuote={false} />
+            <VisitCard
+              job={job}
+              onChanged={setData}
+              canEdit={hasClientAccess(user)}
+              canOpenQuote={false}
+              quotingHere={canQuote(user) && Boolean(job.visit_quote)}
+            />
+          )}
+          {estimate && canQuote(user) && job.visit_quote && (
+            <VisitQuoteCard
+              quoteId={job.visit_quote.id}
+              visitId={job.id}
+              onSent={async () => {
+                // Sending marks the visit done and clocks the sender out.
+                setData(await api(`/api/jobs/${id}`));
+                notifyClockChanged();
+              }}
+            />
           )}
           <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
           <ClockCard jobId={job.id} reloadKey={job.status} />

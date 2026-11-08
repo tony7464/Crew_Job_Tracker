@@ -134,6 +134,9 @@ function InviteCard({ invite, onChange, onRemove }) {
 
 function InviteForm({ onSent, onDone }) {
   const [role, setRole] = useState("employee");
+  // null: follow the role (leads quote, employees do not) until the owner picks.
+  const [quoteChoice, setQuoteChoice] = useState(null);
+  const canQuote = quoteChoice ?? role === "lead";
   const [pickColor, setPickColor] = useState(false);
   const [color, setColor] = useState(null);
   const [sent, setSent] = useState(null);
@@ -162,7 +165,11 @@ function InviteForm({ onSent, onDone }) {
 
   function onSubmitForm(event) {
     const form = new FormData(event.target);
-    const body = { email: String(form.get("email") || "").trim(), can_manage_clients: role === "lead" };
+    const body = {
+      email: String(form.get("email") || "").trim(),
+      can_manage_clients: role === "lead",
+      can_quote: canQuote,
+    };
     if (pickColor && color) body.color = color;
     handleSubmit(event, body);
   }
@@ -194,6 +201,12 @@ function InviteForm({ onSent, onDone }) {
           ))}
         </div>
       </fieldset>
+      <Checkbox
+        label="Can quote on site"
+        description="Prices and sends the quote for estimate visits they go on."
+        checked={canQuote}
+        onChange={(event) => setQuoteChoice(event.target.checked)}
+      />
       <Checkbox
         label="Choose their calendar color"
         description="Otherwise a color nobody uses yet is picked when they join. You can change it later."
