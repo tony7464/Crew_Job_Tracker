@@ -37,6 +37,8 @@ export default function VisitQuoteCard({ quoteId, visitId, onSent }) {
   const [sendResult, setSendResult] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [busy, setBusy] = useState(false);
+  // null: open once the quote has lines (or is sent); a new, empty draft starts folded.
+  const [open, setOpen] = useState(null);
 
   if (error) {
     return (
@@ -74,9 +76,16 @@ export default function VisitQuoteCard({ quoteId, visitId, onSent }) {
           Quote <Badge tone={tone}>{label}</Badge>
         </span>
       }
-      description={quote.status === "draft" ? "Price the work here and send it to the customer." : quote.title}
+      description={quote.status === "draft" ? undefined : quote.title}
     >
-      {quote.status === "draft" ? (
+      {quote.status === "draft" && !(open ?? quote.items.length > 0) ? (
+        <div className="space-y-3">
+          <p className="text-sm text-muted">
+            Take your photos and list the materials first. Then price the work here and send it to the customer.
+          </p>
+          <Button onClick={() => setOpen(true)}>Price the work</Button>
+        </div>
+      ) : quote.status === "draft" ? (
         <DraftEditor
           key={`${quote.id}-${reloadKey}`}
           quote={quote}

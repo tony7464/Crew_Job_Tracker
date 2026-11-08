@@ -100,37 +100,89 @@ function MyJobDetailView({ id }) {
           </span>
         }
       />
-      <div className="grid items-start gap-6 lg:grid-cols-5">
-        <div className="space-y-6 lg:col-span-3">
-          <Card title={job.client_name}>
-            <div className="space-y-4">
-              {job.client_address ? (
-                <p className="text-sm">{job.client_address}</p>
-              ) : (
-                <p className="text-sm text-muted">No address on file.</p>
-              )}
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                <MapLink address={job.client_address} asButton label="Directions" />
-                {job.client_phone && (
-                  <a href={`tel:${job.client_phone}`} className={buttonClass({ variant: "secondary" })}>
-                    <PhoneIcon />
-                    Call {job.client_phone}
-                  </a>
+      {estimate ? (
+        // An estimate visit, in the order it happens: get there, take photos and list
+        // materials, price it, finish. The visit's details and the notes come after.
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <div className="space-y-6 lg:col-span-3">
+            <Card title={job.client_name}>
+              <div className="space-y-4">
+                {job.client_address ? (
+                  <p className="text-sm">{job.client_address}</p>
+                ) : (
+                  <p className="text-sm text-muted">No address on file.</p>
+                )}
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                  <MapLink address={job.client_address} asButton label="Directions" />
+                  {job.client_phone && (
+                    <a href={`tel:${job.client_phone}`} className={buttonClass({ variant: "secondary" })}>
+                      <PhoneIcon />
+                      Call {job.client_phone}
+                    </a>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Crew</p>
+                  <PersonChips people={job.assignees} />
+                </div>
+                {job.notes && (
+                  <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2.5 text-sm text-warning-soft-fg">
+                    <p className="text-xs font-semibold uppercase tracking-wide">Instructions</p>
+                    <p className="mt-1 whitespace-pre-wrap">{job.notes}</p>
+                  </div>
                 )}
               </div>
-              <div>
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Crew</p>
-                <PersonChips people={job.assignees} />
+            </Card>
+            <OnMyWayCard key={`on-my-way-${job.status}`} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
+            <ClockCard jobId={job.id} reloadKey={job.status} />
+            <JobPhotos
+              jobId={job.id}
+              reloadKey={photosKey}
+              defaultKind={!estimate && job.status === "completed" ? "after" : "before"}
+              onChange={(photos, enabled) => {
+                setAfterCount(photos.filter((photo) => photo.kind === "after").length);
+                setPhotosEnabled(enabled);
+              }}
+              onPhotosChanged={() => setNotesKey((key) => key + 1)}
+            />
+            <MaterialsCard key={`materials-${job.status}`} jobId={job.id} />
+            <ChecklistCard jobId={job.id} onChange={setChecklist} hideEmpty />
+            {canQuote(user) && job.visit_quote && (
+              <VisitQuoteCard
+                quoteId={job.visit_quote.id}
+                visitId={job.id}
+                onSent={async () => {
+                  // Sending marks the visit done and clocks the sender out.
+                  setData(await api(`/api/jobs/${id}`));
+                  notifyClockChanged();
+                }}
+              />
+            )}
+            {job.status === "scheduled" ? (
+              <div className="space-y-2">
+                {checklist && checklist.done < checklist.total && (
+                  <p className="text-sm font-medium text-warning">
+                    {checklist.total - checklist.done} of {checklist.total} checklist steps are not ticked yet.
+                  </p>
+                )}
+                {!estimate && afterCount === 0 && photosEnabled && (
+                  <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
+                )}
+                <Button onClick={markCompleted} disabled={saving} size="lg" block className="sm:w-auto">
+                  <CheckIcon className="h-5 w-5" />
+                  {saving ? "Saving…" : doneLabel}
+                </Button>
+                <ErrorMessage error={saveError} />
               </div>
-              {job.notes && (
-                <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2.5 text-sm text-warning-soft-fg">
-                  <p className="text-xs font-semibold uppercase tracking-wide">Instructions</p>
-                  <p className="mt-1 whitespace-pre-wrap">{job.notes}</p>
-                </div>
-              )}
-            </div>
-          </Card>
-          {estimate && (
+            ) : job.status === "completed" ? (
+              <Alert tone="success">
+                {estimate ? "This visit is done." : "This job is marked completed."} If that was a mistake, ask the owner to change it back.
+              </Alert>
+            ) : (
+              <Alert tone="warning">{estimate ? "This visit was cancelled." : "This job was cancelled."}</Alert>
+            )}
+          </div>
+          <div className="space-y-6 lg:col-span-2">
             <VisitCard
               job={job}
               onChanged={setData}
@@ -138,66 +190,94 @@ function MyJobDetailView({ id }) {
               canOpenQuote={false}
               quotingHere={canQuote(user) && Boolean(job.visit_quote)}
             />
-          )}
-          {estimate && canQuote(user) && job.visit_quote && (
-            <VisitQuoteCard
-              quoteId={job.visit_quote.id}
-              visitId={job.id}
-              onSent={async () => {
-                // Sending marks the visit done and clocks the sender out.
-                setData(await api(`/api/jobs/${id}`));
-                notifyClockChanged();
-              }}
+            <JobNotes
+              jobId={job.id}
+              reloadKey={notesKey}
+              photosEnabled={photosEnabled}
+              onPhotosChanged={() => setPhotosKey((key) => key + 1)}
             />
-          )}
-          <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
-          <ClockCard jobId={job.id} reloadKey={job.status} />
-          <ChecklistCard jobId={job.id} onChange={setChecklist} />
-          <MaterialsCard key={job.status} jobId={job.id} />
-          <JobPhotos
-            jobId={job.id}
-            reloadKey={photosKey}
-            defaultKind={!estimate && job.status === "completed" ? "after" : "before"}
-            onChange={(photos, enabled) => {
-              setAfterCount(photos.filter((photo) => photo.kind === "after").length);
-              setPhotosEnabled(enabled);
-            }}
-            onPhotosChanged={() => setNotesKey((key) => key + 1)}
-          />
-          {job.status === "scheduled" ? (
-            <div className="space-y-2">
-              {checklist && checklist.done < checklist.total && (
-                <p className="text-sm font-medium text-warning">
-                  {checklist.total - checklist.done} of {checklist.total} checklist steps are not ticked yet.
-                </p>
-              )}
-              {!estimate && afterCount === 0 && photosEnabled && (
-                <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
-              )}
-              <Button onClick={markCompleted} disabled={saving} size="lg" block className="sm:w-auto">
-                <CheckIcon className="h-5 w-5" />
-                {saving ? "Saving…" : doneLabel}
-              </Button>
-              <ErrorMessage error={saveError} />
-            </div>
-          ) : job.status === "completed" ? (
-            <Alert tone="success">
-              {estimate ? "This visit is done." : "This job is marked completed."} If that was a mistake, ask the owner to change it back.
-            </Alert>
-          ) : (
-            <Alert tone="warning">{estimate ? "This visit was cancelled." : "This job was cancelled."}</Alert>
-          )}
+          </div>
         </div>
-        <div className="lg:col-span-2">
-          {!estimate && <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />}
-          <JobNotes
-            jobId={job.id}
-            reloadKey={notesKey}
-            photosEnabled={photosEnabled}
-            onPhotosChanged={() => setPhotosKey((key) => key + 1)}
-          />
+      ) : (
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <div className="space-y-6 lg:col-span-3">
+            <Card title={job.client_name}>
+              <div className="space-y-4">
+                {job.client_address ? (
+                  <p className="text-sm">{job.client_address}</p>
+                ) : (
+                  <p className="text-sm text-muted">No address on file.</p>
+                )}
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                  <MapLink address={job.client_address} asButton label="Directions" />
+                  {job.client_phone && (
+                    <a href={`tel:${job.client_phone}`} className={buttonClass({ variant: "secondary" })}>
+                      <PhoneIcon />
+                      Call {job.client_phone}
+                    </a>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">Crew</p>
+                  <PersonChips people={job.assignees} />
+                </div>
+                {job.notes && (
+                  <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2.5 text-sm text-warning-soft-fg">
+                    <p className="text-xs font-semibold uppercase tracking-wide">Instructions</p>
+                    <p className="mt-1 whitespace-pre-wrap">{job.notes}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+            <OnMyWayCard key={`on-my-way-${job.status}`} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
+            <ClockCard jobId={job.id} reloadKey={job.status} />
+            <ChecklistCard jobId={job.id} onChange={setChecklist} />
+            <MaterialsCard key={`materials-${job.status}`} jobId={job.id} />
+            <JobPhotos
+              jobId={job.id}
+              reloadKey={photosKey}
+              defaultKind={!estimate && job.status === "completed" ? "after" : "before"}
+              onChange={(photos, enabled) => {
+                setAfterCount(photos.filter((photo) => photo.kind === "after").length);
+                setPhotosEnabled(enabled);
+              }}
+              onPhotosChanged={() => setNotesKey((key) => key + 1)}
+            />
+            {job.status === "scheduled" ? (
+              <div className="space-y-2">
+                {checklist && checklist.done < checklist.total && (
+                  <p className="text-sm font-medium text-warning">
+                    {checklist.total - checklist.done} of {checklist.total} checklist steps are not ticked yet.
+                  </p>
+                )}
+                {!estimate && afterCount === 0 && photosEnabled && (
+                  <p className="text-sm text-muted">Add a few <strong className="font-medium text-fg">After</strong> photos before you finish, so the owner can see the work.</p>
+                )}
+                <Button onClick={markCompleted} disabled={saving} size="lg" block className="sm:w-auto">
+                  <CheckIcon className="h-5 w-5" />
+                  {saving ? "Saving…" : doneLabel}
+                </Button>
+                <ErrorMessage error={saveError} />
+              </div>
+            ) : job.status === "completed" ? (
+              <Alert tone="success">
+                {estimate ? "This visit is done." : "This job is marked completed."} If that was a mistake, ask the owner to change it back.
+              </Alert>
+            ) : (
+              <Alert tone="warning">{estimate ? "This visit was cancelled." : "This job was cancelled."}</Alert>
+            )}
+          </div>
+          <div className="lg:col-span-2">
+            {!estimate && <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />}
+            <JobNotes
+              jobId={job.id}
+              reloadKey={notesKey}
+              photosEnabled={photosEnabled}
+              onPhotosChanged={() => setPhotosKey((key) => key + 1)}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

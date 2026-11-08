@@ -20,7 +20,8 @@ import { Badge, InvoiceStatusBadge, PaidBadge, RepeatBadge, StatusBadge } from "
 import { ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/Feedback";
-import { CalendarIcon, ClockIcon, DollarIcon } from "../components/ui/Icons";
+import { CalendarIcon, ClockIcon, DollarIcon, PhoneIcon } from "../components/ui/Icons";
+import MapLink from "../components/MapLink";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsync } from "../hooks";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
@@ -51,6 +52,31 @@ function InvoiceCard({ job }) {
   return (
     <Card title="Invoice" description="Bill this job: one line at its price. The client gets a link to pay online.">
       <CreateInvoiceButton source={{ job_id: job.id }} disabledReason={reason} />
+    </Card>
+  );
+}
+
+// Where the visit is and how to reach the customer, for the owner planning or calling ahead.
+function CustomerCard({ job }) {
+  return (
+    <Card title="Customer">
+      <div className="space-y-2 text-sm">
+        <Link to={`/clients/${job.client_id}`} className="link font-medium">
+          {job.client_name}
+        </Link>
+        {job.client_address ? (
+          <p className="flex flex-wrap items-center gap-x-2 text-muted">
+            {job.client_address} <MapLink address={job.client_address} />
+          </p>
+        ) : (
+          <p className="text-muted">No address on file.</p>
+        )}
+        {job.client_phone && (
+          <a href={`tel:${job.client_phone}`} className="link inline-flex items-center gap-1.5">
+            <PhoneIcon className="h-3.5 w-3.5" /> {job.client_phone}
+          </a>
+        )}
+      </div>
     </Card>
   );
 }
@@ -149,12 +175,36 @@ function JobDetailView({ id }) {
           <PersonChips people={job.assignees} />
         </div>
       </PageHeader>
-      <div className="grid items-start gap-6 lg:grid-cols-5">
-        {estimate ? (
-          <div className="lg:col-span-3">
+      {estimate ? (
+        // An estimate visit: the customer and the visit's details and quote first, then what the
+        // crew found there (photos, materials, notes). The crew's tools sit beside.
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <div className="space-y-6 lg:col-span-3">
+            <CustomerCard job={job} />
             <VisitCard job={job} onChanged={jobState.setData} canEdit canOpenQuote />
+            <JobPhotos
+              jobId={job.id}
+              reloadKey={photosKey}
+              defaultKind="before"
+              onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
+              onPhotosChanged={() => setNotesKey((key) => key + 1)}
+            />
+            <MaterialsCard key={`materials-${job.status}`} jobId={job.id} />
+            <JobNotes
+              jobId={job.id}
+              reloadKey={notesKey}
+              photosEnabled={photosEnabled}
+              onPhotosChanged={() => setPhotosKey((key) => key + 1)}
+            />
           </div>
-        ) : (
+          <div className="space-y-6 lg:col-span-2">
+            <OnMyWayCard key={`on-my-way-${job.status}`} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
+            <ChecklistCard key={`checklist-${job.service_type}`} jobId={job.id} hideEmpty />
+            <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
+          </div>
+        </div>
+      ) : (
+        <div className="grid items-start gap-6 lg:grid-cols-5">
           <Card title="Edit job" className="lg:col-span-3">
             <JobForm
               key={`${job.id}-${job.status}-${job.paid}-${job.invoice?.status}-${job.date}-${job.time}-${minutes}-${crewKey}`}
@@ -165,32 +215,36 @@ function JobDetailView({ id }) {
               submitLabel="Save changes"
             />
           </Card>
-        )}
-        <div className="space-y-6 lg:col-span-2">
-          {!estimate && <InvoiceCard job={job} />}
-          {!estimate && <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />}
-          <OnMyWayCard key={job.status} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
-          <ChecklistCard key={job.service_type} jobId={job.id} />
-          <MaterialsCard key={job.status} jobId={job.id} />
-          <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
-          <JobPhotos
-            jobId={job.id}
-            reloadKey={photosKey}
-            onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
-            onPhotosChanged={() => setNotesKey((key) => key + 1)}
-          />
-          {!estimate && <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />}
-          <JobNotes
-            jobId={job.id}
-            reloadKey={notesKey}
-            photosEnabled={photosEnabled}
-            onPhotosChanged={() => setPhotosKey((key) => key + 1)}
-          />
+          <div className="space-y-6 lg:col-span-2">
+            <InvoiceCard job={job} />
+            <SeriesCard job={job} employees={employees} onChanged={seriesChanged} />
+            <OnMyWayCard key={`on-my-way-${job.status}`} jobId={job.id} onSent={() => setNotesKey((key) => key + 1)} />
+            <ChecklistCard key={`checklist-${job.service_type}`} jobId={job.id} />
+            <MaterialsCard key={`materials-${job.status}`} jobId={job.id} />
+            <JobTimeCard jobId={job.id} crew={job.assignees} reloadKey={`${job.status}-${minutes}`} />
+            <JobPhotos
+              jobId={job.id}
+              reloadKey={photosKey}
+              onChange={(_photos, enabled) => setPhotosEnabled(enabled)}
+              onPhotosChanged={() => setNotesKey((key) => key + 1)}
+            />
+            <SignatureCard jobId={job.id} onSigned={() => setNotesKey((key) => key + 1)} />
+            <JobNotes
+              jobId={job.id}
+              reloadKey={notesKey}
+              photosEnabled={photosEnabled}
+              onPhotosChanged={() => setPhotosKey((key) => key + 1)}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <ConfirmDelete
-        label="Delete job"
-        description="Removes this job, its notes log, and its photos. This cannot be undone."
+        label={estimate ? "Delete visit" : "Delete job"}
+        description={
+          estimate
+            ? "Removes this visit, its notes log, photos, and materials. Its quote stays as a draft. This cannot be undone."
+            : "Removes this job, its notes log, and its photos. This cannot be undone."
+        }
         onConfirm={async () => {
           await api(`/api/jobs/${id}`, { method: "DELETE" });
           navigate("/jobs");

@@ -68,28 +68,27 @@ export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quoti
   }
 
   return (
-    <Card
-      title="Estimate visit"
-      description="A free visit to look at the work. Take photos, notes, and materials so the work can be quoted."
-    >
+    <Card title="Visit details">
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-fg">Quote</span>
-            {quote ? <QuoteStatus quote={quote} /> : <span className="text-muted">None yet</span>}
-            {quote?.total && quote.status !== "draft" && <span className="tabular-nums text-muted">${quote.total}</span>}
-          </span>
-          {canOpenQuote &&
-            (quote ? (
-              <ButtonLink to={`/quotes/${quote.id}`} size="sm" variant={quote.status === "draft" ? "primary" : "secondary"}>
-                {quote.status === "draft" ? "Write the quote" : "Open the quote"}
-              </ButtonLink>
-            ) : (
-              <Button size="sm" onClick={startQuote} disabled={busy}>
-                Start a quote
-              </Button>
-            ))}
-        </div>
+        {!quotingHere && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-sm">
+              <span className="font-medium text-fg">Quote</span>
+              {quote ? <QuoteStatus quote={quote} /> : <span className="text-muted">None yet</span>}
+              {quote?.total && quote.status !== "draft" && <span className="tabular-nums text-muted">${quote.total}</span>}
+            </span>
+            {canOpenQuote &&
+              (quote ? (
+                <ButtonLink to={`/quotes/${quote.id}`} size="sm" variant={quote.status === "draft" ? "primary" : "secondary"}>
+                  {quote.status === "draft" ? "Write the quote" : "Open the quote"}
+                </ButtonLink>
+              ) : (
+                <Button size="sm" onClick={startQuote} disabled={busy}>
+                  Start a quote
+                </Button>
+              ))}
+          </div>
+        )}
         {!canOpenQuote && !quotingHere && quote?.status === "draft" && (
           <p className="text-sm text-muted">The office prices the work from your photos, notes, and materials.</p>
         )}
@@ -99,7 +98,7 @@ export default function VisitCard({ job, onChanged, canEdit, canOpenQuote, quoti
           </Alert>
         )}
         {canEdit && !editing && (
-          <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+          <div className={cx("flex flex-wrap gap-2", !quotingHere && "border-t border-border pt-3")}>
             {job.status === "scheduled" && (
               <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
                 Reschedule or change crew
