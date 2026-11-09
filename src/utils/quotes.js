@@ -25,6 +25,17 @@ export function blankItem() {
   return { key: `new-${nextKey}`, description: "", quantity: "1", unit_price: "" };
 }
 
+// A price book item as a new editor line: its name (and detail) and price, quantity 1.
+export function priceBookLine(item) {
+  const description = [item.name, item.description].filter(Boolean).join(" - ").slice(0, MAX_DESCRIPTION);
+  return { ...blankItem(), description, unit_price: item.unit_price };
+}
+
+// A line nobody has typed in yet.
+export function isBlankLine(line) {
+  return !line.description.trim() && !String(line.unit_price).trim();
+}
+
 // Saved items as editor lines, or one blank line when there are none.
 export function editorItems(items) {
   return items?.length

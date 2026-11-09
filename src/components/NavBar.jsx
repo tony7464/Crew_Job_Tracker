@@ -18,6 +18,7 @@ const OWNER_LINKS = [
   ["/requests", "Requests"],
   ["/quotes", "Quotes"],
   ["/invoices", "Invoices"],
+  ["/price-book", "Price book"],
   ["/employees", "Employees"],
   ["/timesheets", "Timesheets"],
   ["/reports", "Reports"],
@@ -26,7 +27,7 @@ const OWNER_LINKS = [
 // The owner's top bar has no room for every link, so related links share a small
 // menu there. The phone menu lists them as plain links.
 const LINK_GROUPS = [
-  ["Billing", new Set(["/quotes", "/invoices", "/reports"])],
+  ["Billing", new Set(["/quotes", "/invoices", "/price-book", "/reports"])],
   ["Team", new Set(["/employees", "/timesheets"])],
 ];
 
