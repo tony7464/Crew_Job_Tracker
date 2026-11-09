@@ -13,7 +13,8 @@ const MAX_TEXT = 200;
 // A job's checklist. Everyone who can see the job ticks steps; the owner (can_edit)
 // can also add and remove steps on this job. onChange({ done, total }) after each load
 // or change, so the page can warn before the job is marked completed.
-export default function ChecklistCard({ jobId, onChange }) {
+// hideEmpty: show nothing (not even "add a step") when the job has no steps.
+export default function ChecklistCard({ jobId, onChange, hideEmpty = false }) {
   const { data, setData, error } = useAsync(api, `/api/jobs/${jobId}/checklist`);
   const [busyId, setBusyId] = useState(null);
   const [actionError, setActionError] = useState(null);
@@ -58,6 +59,7 @@ export default function ChecklistCard({ jobId, onChange }) {
     setText("");
   }
 
+  if (hideEmpty && (!data || !data.total)) return null;
   if (error) {
     return (
       <Card title="Checklist">
