@@ -278,7 +278,7 @@ function VisitForm({ job, busy, error, onCancel, onSave }) {
                   )}
                 >
                   <Avatar person={person} size="sm" />
-                  {person.username}
+                  {person.name}
                   {on && <CheckIcon className="h-3.5 w-3.5 text-primary" />}
                 </button>
               );

@@ -101,7 +101,7 @@ function buildEvents(data, { mode, selfId, hidden, month }) {
         id: `lunch-${lunch.id}`,
         start: wallDateTime(lunch.date, lunch.start_time),
         end: wallDateTime(lunch.date, lunch.end_time),
-        title: team ? `Lunch · ${lunch.user.username}` : "Lunch",
+        title: team ? `Lunch · ${lunch.user.name}` : "Lunch",
         backgroundColor: tint(color, 6),
         borderColor: color,
         textColor: "var(--muted)",
@@ -136,8 +136,8 @@ function CrewDots({ people }) {
       {people.slice(0, 4).map((person) => {
         const color = personColor(person);
         return (
-          <span key={person.id} title={person.username} style={{ backgroundColor: color, color: readableText(color) }}>
-            {initials(person.username)}
+          <span key={person.id} title={person.name} style={{ backgroundColor: color, color: readableText(color) }}>
+            {initials(person.name)}
           </span>
         );
       })}

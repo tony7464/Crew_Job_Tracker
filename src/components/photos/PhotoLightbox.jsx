@@ -63,7 +63,7 @@ export default function PhotoLightbox({
           {photo.kind && <Badge tone={KIND_TONES[photo.kind]}>{KIND_LABELS[photo.kind]}</Badge>}
           {photo.uploader && (
             <span className="text-muted">
-              {photo.uploader.username} · <time dateTime={photo.created_at}>{formatStamp(photo.created_at)}</time>
+              {photo.uploader.name} · <time dateTime={photo.created_at}>{formatStamp(photo.created_at)}</time>
             </span>
           )}
         </div>

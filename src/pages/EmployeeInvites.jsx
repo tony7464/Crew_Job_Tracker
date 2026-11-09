@@ -18,7 +18,7 @@ import { formatMoment } from "../utils/quotes";
 
 const ROLES = [
   ["employee", "Employee", "Sees only the jobs you assign them. Never sees prices."],
-  ["lead", "Lead", "An employee with client access: can view, add, and edit clients. Never sees prices."],
+  ["lead", "Manager", "Can view, add, and edit clients, book estimate visits, and see the team schedule. Never sees prices."],
 ];
 
 export function InviteButton({ onClick }) {
@@ -43,7 +43,7 @@ export default function EmployeeInvites({ inviting, setInviting }) {
     <section>
       <SectionHeader
         title="Invites"
-        description="Invite someone by email. They pick their own username and password from the link, and join your crew. Invites expire after 7 days; Resend gives them 7 more."
+        description="Invite someone by email. They add their name and pick a password from the link, and join your crew. Invites expire after 7 days; Resend gives them 7 more."
       />
       <ErrorMessage error={error} />
       {invites && !invites.length && (
@@ -99,7 +99,7 @@ function InviteCard({ invite, onChange, onRemove }) {
         <p className="flex flex-wrap items-center gap-2 font-semibold">
           <span className="truncate">{invite.email}</span>
           <Badge tone={expired ? "warning" : "success"}>{expired ? "Expired" : "Pending"}</Badge>
-          <Badge tone="primary">{invite.role === "lead" ? "Lead" : "Employee"}</Badge>
+          <Badge tone="primary">{invite.role === "lead" ? "Manager" : "Employee"}</Badge>
         </p>
         <p className="mt-0.5 text-sm text-muted">
           {expired ? `Expired ${formatMoment(invite.expires_at)}` : `Expires ${formatMoment(invite.expires_at)}`}

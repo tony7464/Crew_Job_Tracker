@@ -6,6 +6,16 @@ export function isEmployee(user) {
   return user?.role === "employee";
 }
 
+// Managers are employees with client access ("can_manage_clients", once called leads).
+export function isManager(user) {
+  return Boolean(isEmployee(user) && user.can_manage_clients);
+}
+
+export function roleLabel(user) {
+  if (isOwner(user)) return "Owner";
+  return isManager(user) ? "Manager" : "Employee";
+}
+
 export function hasClientAccess(user) {
   return isOwner(user) || Boolean(isEmployee(user) && user.can_manage_clients);
 }

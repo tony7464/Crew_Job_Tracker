@@ -23,14 +23,14 @@ export default function EntryList({ entries, onEdit, showJob = false, empty = "N
             <Avatar person={entry.person} size="sm" />
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <span className="font-medium text-fg">{entry.person.username}</span>
+                <span className="font-medium text-fg">{entry.person.name}</span>
                 {entry.long_open ? (
                   <Badge tone="danger" title="Open for more than 16 hours">Check clock-out</Badge>
                 ) : entry.open ? (
                   <Badge tone="success">On the clock</Badge>
                 ) : null}
                 {entry.edited_by && (
-                  <Badge tone="neutral" title={`Changed by ${entry.edited_by.username}`}>Edited</Badge>
+                  <Badge tone="neutral" title={`Changed by ${entry.edited_by.name}`}>Edited</Badge>
                 )}
               </span>
               {showJob && <span className="block truncate text-sm text-fg">{entry.job_label}</span>}
@@ -50,7 +50,7 @@ export default function EntryList({ entries, onEdit, showJob = false, empty = "N
                 type="button"
                 onClick={() => onEdit(entry)}
                 className="-mx-2 block w-[calc(100%+1rem)] rounded-lg px-2 hover:bg-surface-2"
-                aria-label={`Edit ${entry.person.username}'s time, ${formatMinutes(liveMinutes(entry, now))}`}
+                aria-label={`Edit ${entry.person.name}'s time, ${formatMinutes(liveMinutes(entry, now))}`}
               >
                 {body}
               </button>

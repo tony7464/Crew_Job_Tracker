@@ -502,7 +502,7 @@ function VisitStep({ user, today, who, visit, setVisit, notify, setNotify, error
                   )}
                 >
                   <Avatar person={person} size="sm" />
-                  {person.username}
+                  {person.name}
                   {on && <CheckIcon className="h-3.5 w-3.5 text-primary" />}
                 </button>
               );
@@ -676,7 +676,7 @@ function DoneStep({ user, result, phone, email, onAnother }) {
               <p className="flex flex-wrap items-center gap-1.5 text-muted">
                 {confirmation.crew.map((person) => (
                   <span key={person.id} className="inline-flex items-center gap-1">
-                    <Avatar person={person} size="sm" /> {person.username}
+                    <Avatar person={person} size="sm" /> {person.name}
                   </span>
                 ))}
               </p>

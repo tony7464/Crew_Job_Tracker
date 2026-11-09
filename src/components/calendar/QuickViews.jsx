@@ -64,7 +64,7 @@ export function JobQuickView({ job, showMoney, openTo, onClose }) {
 
 export function LunchQuickView({ lunch, onClose }) {
   return (
-    <Modal title="Lunch break" description={lunch.user.username} onClose={onClose} size="sm">
+    <Modal title="Lunch break" description={lunch.user.name} onClose={onClose} size="sm">
       <dl className="divide-y divide-border">
         <Row label="When">
           {formatDay(lunch.date, "long")}

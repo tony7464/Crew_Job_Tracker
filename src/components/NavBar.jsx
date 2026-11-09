@@ -222,7 +222,7 @@ export default function NavBar() {
                 }
               >
                 <Avatar person={user} size="sm" />
-                <span className="sr-only lg:not-sr-only lg:max-w-28 lg:truncate">{user.username}</span>
+                <span className="sr-only lg:not-sr-only lg:max-w-28 lg:truncate">{user.name}</span>
               </NavLink>
               <button
                 type="button"
@@ -269,7 +269,7 @@ export default function NavBar() {
               <span className="flex items-center gap-3">
                 <Avatar person={user} size="md" />
                 <span>
-                  <span className="block leading-tight">{user.username}</span>
+                  <span className="block leading-tight">{user.name}</span>
                   <span className="block text-xs font-normal text-muted">{roleLabel(user)} · Account</span>
                 </span>
               </span>

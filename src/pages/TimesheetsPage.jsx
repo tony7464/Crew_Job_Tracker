@@ -49,8 +49,8 @@ export default function TimesheetsPage() {
   const thisWeek = weekOf(businessToday(user.timezone));
   const isThisWeek = week.start === thisWeek.start;
   const people = useMemo(
-    () => [{ id: user.id, username: user.username }, ...(employees.data || [])],
-    [employees.data, user.id, user.username],
+    () => [{ id: user.id, username: user.username, name: user.name }, ...(employees.data || [])],
+    [employees.data, user.id, user.username, user.name],
   );
 
   const days = useMemo(() => {
@@ -102,7 +102,7 @@ export default function TimesheetsPage() {
               <option value="">Everyone</option>
               {people.map((person) => (
                 <option key={person.id} value={person.id}>
-                  {person.username}
+                  {person.name}
                 </option>
               ))}
             </Select>
@@ -132,7 +132,7 @@ export default function TimesheetsPage() {
                   return (
                     <li key={row.person.id} className="flex items-center gap-3 py-2.5">
                       <Avatar person={row.person} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.person.username}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.person.name}</span>
                       {row.open > 0 && <Badge tone="success">On the clock</Badge>}
                       <span className="text-sm tabular-nums">{formatHours(minutes)} h</span>
                     </li>

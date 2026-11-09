@@ -8,12 +8,12 @@ const SIZES = {
   lg: "h-11 w-11 text-sm",
 };
 
-// A colored circle with initials. person: { username, color }.
+// A colored circle with initials. person: { name, color }.
 export function Avatar({ person, size = "md", className }) {
   const color = personColor(person);
   return (
     <span
-      title={person?.username}
+      title={person?.name}
       aria-hidden="true"
       className={cx(
         "inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-tight",
@@ -22,7 +22,7 @@ export function Avatar({ person, size = "md", className }) {
       )}
       style={{ backgroundColor: color, color: readableText(color) }}
     >
-      {initials(person?.username)}
+      {initials(person?.name)}
     </span>
   );
 }
@@ -34,7 +34,7 @@ export function AvatarStack({ people, size = "sm", max = 4 }) {
   const extra = people.length - shown.length;
   return (
     <span className="inline-flex items-center">
-      <span className="sr-only">{people.map((person) => person.username).join(", ")}</span>
+      <span className="sr-only">{people.map((person) => person.name).join(", ")}</span>
       <span className="flex -space-x-1">
         {shown.map((person) => (
           <Avatar key={person.id} person={person} size={size} className="ring-2 ring-surface" />
@@ -56,7 +56,7 @@ export function PersonChips({ people, empty = "Nobody assigned" }) {
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 py-0.5 pl-0.5 pr-2.5 text-sm"
         >
           <Avatar person={person} size="xs" />
-          {person.username}
+          {person.name}
         </span>
       ))}
     </span>

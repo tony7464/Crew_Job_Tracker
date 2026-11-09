@@ -91,7 +91,7 @@ export default function JobNotes({ jobId, reloadKey = 0, photosEnabled = true, o
               <Avatar person={note.author} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted">
-                  <span className="font-semibold text-fg">{note.author.username}</span>{" "}
+                  <span className="font-semibold text-fg">{note.author.name}</span>{" "}
                   <time dateTime={note.created_at}>{formatStamp(note.created_at)}</time>
                 </p>
                 {note.body && (

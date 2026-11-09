@@ -245,7 +245,7 @@ function SeriesEditor({ series, employees, onClose, onSaved }) {
                 >
                   <input type="checkbox" name="employee_ids" value={employee.id} defaultChecked={assigned.has(employee.id)} className="h-4 w-4" />
                   <Avatar person={employee} size="xs" />
-                  {employee.username}
+                  {employee.name}
                 </label>
               ))}
             </div>

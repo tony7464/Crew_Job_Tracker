@@ -163,8 +163,8 @@ function MaterialRow({ item, busy, onToggle, onEdit, onRemove }) {
           {item.note && <span className="block text-xs text-muted">{item.note}</span>}
           <span className="block text-xs text-muted">
             {item.got && item.got_by
-              ? `Picked up by ${item.got_by.username} · ${when(item.got_at)}`
-              : item.added_by && `Added by ${item.added_by.username}`}
+              ? `Picked up by ${item.got_by.name} · ${when(item.got_at)}`
+              : item.added_by && `Added by ${item.added_by.name}`}
           </span>
         </span>
       </button>

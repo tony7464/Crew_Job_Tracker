@@ -92,7 +92,7 @@ export default function OnMyWayCard({ jobId, onSent }) {
         {result && result.delivery === "log" && <Alert tone="warning">{NOT_SET_UP[result.message.channel]}</Alert>}
         {data.last && (
           <p className="text-xs text-muted">
-            Last told at {stamp(data.last.sent_at)} by {data.last.sender.username}: about {data.last.eta_minutes} min,{" "}
+            Last told at {stamp(data.last.sent_at)} by {data.last.sender.name}: about {data.last.eta_minutes} min,{" "}
             {data.last.channel === "sms" ? "texted" : "emailed"} {data.last.sent_to}.
           </p>
         )}
