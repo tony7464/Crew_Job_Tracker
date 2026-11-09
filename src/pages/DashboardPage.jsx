@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
+import BusinessHealthCard from "../components/BusinessHealthCard";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
@@ -180,6 +181,7 @@ export default function DashboardPage() {
         />
       </Card>
       {data.visits_to_price?.length > 0 && <VisitsToPrice visits={data.visits_to_price} />}
+      <BusinessHealthCard />
       <section>
         <SectionHeader
           title="Owed"
