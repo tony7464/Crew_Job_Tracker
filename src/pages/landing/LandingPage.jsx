@@ -27,42 +27,42 @@ import {
 } from "../../config/plans";
 
 const FEATURES = [
-  [InboxIcon, "New quote in a minute", "Take the customer's name, number, and address, pick a time, and they get a text with when you're coming."],
-  [CheckIcon, "Quote on site", "Your crew prices the job at the house and sends it. The customer can accept on the spot, on your phone."],
-  [CalendarIcon, "Team schedule", "Every job and every crew member on one calendar. Drag to move a job; see lunch breaks and who's free."],
-  [PhoneIcon, "An app for your crew", "Their jobs for the day, directions, \"on my way\" texts, and clocking in, on the phone they already have."],
-  [CameraIcon, "Photos, checklists, materials", "Before and after photos, the steps for each service, and what to pick up from the store, all inside each job."],
-  [DollarIcon, "Invoices and online payments", "Send an invoice and get paid by card, straight into your own Stripe account. Reminders go out for you."],
-  [RepeatIcon, "Recurring jobs", "Weekly, every few weeks, or monthly: the visits fill your schedule ahead of time."],
-  [ClockIcon, "Timesheets and reports", "Hours by person and job, what's owed, your best clients and services, and how many quotes you win."],
+  [InboxIcon, "New quote in a minute", "Enter the customer's name, phone, and address, pick a time, and they get a text confirming when you'll arrive."],
+  [CheckIcon, "Quote on site", "Your crew prices the job on site and sends the quote. The customer can accept it right there on your phone."],
+  [CalendarIcon, "Team schedule", "Every job and crew member on one calendar. Drag a job to move it, and see who's free at a glance."],
+  [PhoneIcon, "An app for your crew", "Today's jobs, directions, \"on my way\" texts, and clocking in and out, all on the phone they already have."],
+  [CameraIcon, "Photos, checklists, and materials", "Before-and-after photos, step-by-step checklists, and a list of materials to pick up, all saved with each job."],
+  [DollarIcon, "Invoices and online payments", "Send an invoice and get paid by card, straight into your own Stripe account. Overdue reminders go out automatically."],
+  [RepeatIcon, "Recurring jobs", "Set a job to repeat weekly, every few weeks, or monthly, and the visits are added to your schedule for you."],
+  [ClockIcon, "Timesheets and reports", "Hours by employee and job, money owed, your top clients and services, and how many of your quotes are accepted."],
 ];
 
 const STEPS = [
-  ["Request", "A customer fills in your request form, or calls you."],
-  ["Visit", "Book a visit to look at the work. They get a text confirming it."],
-  ["Quote", "Price it on site or from the office, and send it as a link."],
-  ["Job", "They accept, and the job lands on your schedule with the photos."],
-  ["Paid", "Send the invoice. They pay by card, and it goes to your bank."],
+  ["Request", "A customer fills out your online request form or calls you."],
+  ["Visit", "Schedule a visit to see the job. The customer gets a text confirming the time."],
+  ["Quote", "Price the work on site or from the office, and send the quote as a link."],
+  ["Job", "When they accept, the job goes on your schedule with the visit's photos."],
+  ["Paid", "Send the invoice. They pay by card, and the money goes straight to your bank."],
 ];
 
 const FAQ = [
   ["Do I need a credit card for the free trial?", `No. Try everything for ${TRIAL_DAYS} days without a card.`],
   [
     "How do my customers pay me?",
-    `By card, through your own Stripe account, so the money goes straight to you. We take ${PLATFORM_FEE_PERCENT}% of it; Stripe's standard card fees apply. You can connect a Stripe account you already have.`,
+    `By card, through your own Stripe account, so the money goes straight to you. Crew Job Tracker takes ${PLATFORM_FEE_PERCENT}% of each payment; only Stripe's standard card fees apply. You can also connect a Stripe account you already have.`,
   ],
   [
     "Does my crew have to install an app?",
-    "No. It works in the browser on any phone, and they can add it to their home screen so it opens like an app.",
+    "No. It works in the web browser on any phone, and they can add it to their home screen so it opens like an app.",
   ],
   [
     "Can my crew see what I charge?",
-    "No. Employees never see job prices. You choose who can price and send quotes on site, and they only see the quotes for their visits.",
+    "No. Employees never see job prices. You choose who can price and send quotes on site, and they only see quotes for the visits they're on.",
   ],
-  ["Can I change plans or cancel?", "Yes, at any time. Your clients, jobs, and records stay yours."],
+  ["Can I change plans or cancel?", "Yes, at any time. Your clients, jobs, and records always belong to you."],
   [
     "Will it text my customers?",
-    "Only about their visits and quotes (never prices), and every text says how to opt out. You can turn confirmations and reminders off in Settings.",
+    "Only about their own visits and quotes, and never with prices. Every text explains how to opt out, and you can turn confirmations and reminders off in Settings.",
   ],
 ];
 
@@ -131,11 +131,11 @@ function Hero() {
       <div>
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">For small service businesses</p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight text-fg sm:text-5xl">
-          Quotes, scheduling, your crew, and getting paid. All from your phone.
+          Run your whole service business from your phone.
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted">
-          Crew Job Tracker is the one app for window cleaners, gutter crews, pressure washers, cleaners, and handymen to book
-          estimate visits, quote on site, run the crew's day, and get paid online.
+          Book estimate visits, send quotes, schedule your crew, and get paid online, all in one app. Built for plumbers,
+          cleaners, landscapers, handymen, and other home service businesses.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <ButtonLink to="/signup" size="lg">
@@ -177,9 +177,9 @@ function Features() {
   return (
     <section id="features" className="scroll-mt-20 border-t border-border bg-surface py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <h2 className="text-3xl font-bold tracking-tight text-fg">Everything the job needs, in one place</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-fg">Everything your business needs, in one place</h2>
         <p className="mt-3 max-w-2xl text-muted">
-          From the first phone call to the money in your account, without spreadsheets, paper, or three different apps.
+          From the first phone call to the money in your account, without spreadsheets, paperwork, or juggling several apps.
         </p>
         <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map(([Icon, title, text]) => (
@@ -202,7 +202,7 @@ function HowItWorks() {
     <section className="py-16 sm:py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <h2 className="text-3xl font-bold tracking-tight text-fg">From the first call to paid</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-fg">From first call to getting paid</h2>
           <ol className="mt-8 space-y-5">
             {STEPS.map(([title, text], index) => (
               <li key={title} className="flex gap-4">
@@ -238,7 +238,7 @@ function Pricing() {
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-fg">Simple pricing by crew size</h2>
           <p className="mx-auto mt-3 max-w-xl text-muted">
-            Every plan has every feature. Start with {TRIAL_DAYS} days free, no card needed.
+            Every plan includes every feature. Try it free for {TRIAL_DAYS} days, no card needed.
           </p>
           <div className="mt-6 inline-flex rounded-full border border-border bg-bg p-1" role="group" aria-label="Billing period">
             {[
@@ -319,7 +319,7 @@ function Pricing() {
           <DollarIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <p className="text-sm text-muted">
             <span className="font-semibold text-fg">Your Stripe, your money.</span> Customers pay you by card straight into
-            your own Stripe account, and we take {PLATFORM_FEE_PERCENT}% of it. Stripe's standard card fees apply.
+            your own Stripe account. Crew Job Tracker takes {PLATFORM_FEE_PERCENT}% of each payment; only Stripe's standard card fees apply.
           </p>
         </div>
       </div>
@@ -331,7 +331,7 @@ function Faq() {
   return (
     <section id="faq" className="scroll-mt-20 py-16 sm:py-20">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <h2 className="text-3xl font-bold tracking-tight text-fg">Questions</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-fg">Frequently asked questions</h2>
         <div className="mt-8 divide-y divide-border rounded-xl border border-border bg-surface">
           {FAQ.map(([question, answer]) => (
             <details key={question} className="group px-5 py-4">
@@ -355,9 +355,9 @@ function Closing() {
     <section className="bg-primary py-14 text-primary-fg">
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Spend less time on paperwork and more on jobs.</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Spend less time on paperwork and more time on jobs.</h2>
           <p className="mt-2 opacity-90">
-            {TRIAL_DAYS} days free, every feature, no card needed.
+            Try every feature free for {TRIAL_DAYS} days. No card needed.
           </p>
         </div>
         <Link

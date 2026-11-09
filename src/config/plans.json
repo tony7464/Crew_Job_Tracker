@@ -8,7 +8,7 @@
       "name": "Solo",
       "monthly": 29,
       "crewLimit": 2,
-      "blurb": "For an owner who works the jobs, with a helper or two.",
+      "blurb": "For owners who work the jobs themselves, with a helper or two.",
       "features": [
         "Customer texts and emails included"
       ]
@@ -19,7 +19,7 @@
       "monthly": 59,
       "crewLimit": 10,
       "popular": true,
-      "blurb": "For a growing team running several jobs a day.",
+      "blurb": "For growing teams running several jobs a day.",
       "features": [
         "Customer texts and emails included"
       ]
@@ -36,9 +36,9 @@
     }
   ],
   "everyPlan": [
-    "New quote intake and estimate visits",
-    "Quoting on site, accepted on the spot",
-    "Team schedule and the crew's phone app",
+    "Quick quote intake and estimate visits",
+    "On-site quotes customers can accept on the spot",
+    "Team schedule and a phone app for your crew",
     "Photos, checklists, and materials on every job",
     "Invoices and online card payments",
     "Recurring jobs",

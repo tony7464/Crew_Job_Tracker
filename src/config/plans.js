@@ -19,7 +19,7 @@ export function annualMonthly(plan) {
 }
 
 export function crewLabel(plan) {
-  return plan.crewLimit === null ? "Unlimited crew" : `Up to ${plan.crewLimit} crew`;
+  return plan.crewLimit === null ? "You plus unlimited crew" : `You plus up to ${plan.crewLimit} crew`;
 }
 
 export function planById(id) {
