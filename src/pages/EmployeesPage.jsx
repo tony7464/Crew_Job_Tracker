@@ -205,7 +205,9 @@ function EmployeeCard({ employee, onChange }) {
             {employee.can_quote && <Badge tone="primary">Can quote</Badge>}
           </p>
           <p className="mt-0.5 truncate text-sm text-muted">{employee.email || "No email"}</p>
-          <p className="mt-0.5 truncate text-xs text-muted">Username: {employee.username}</p>
+          <p className="mt-0.5 truncate text-xs text-muted">
+            {employee.other_companies ? "Also works for another company" : `Username: ${employee.username}`}
+          </p>
         </div>
       </div>
       <ColorPicker
@@ -240,15 +242,18 @@ function EmployeeCard({ employee, onChange }) {
         >
           Edit name
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={busy}
-          aria-expanded={resetting}
-          onClick={() => setResetting((value) => !value)}
-        >
-          Reset password
-        </Button>
+        {/* Their login also opens another company, so only they can change its password. */}
+        {!employee.other_companies && (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={busy}
+            aria-expanded={resetting}
+            onClick={() => setResetting((value) => !value)}
+          >
+            Reset password
+          </Button>
+        )}
         <Button
           variant={employee.is_active ? "danger-outline" : "secondary"}
           size="sm"

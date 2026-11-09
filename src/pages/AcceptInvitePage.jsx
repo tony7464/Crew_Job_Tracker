@@ -62,7 +62,7 @@ function AcceptInvite({ token }) {
         </div>
       )}
       {failure && <InviteProblem error={failure} />}
-      {invite && <AcceptForm token={token} invite={invite} />}
+      {invite && (invite.has_account ? <JoinExisting token={token} invite={invite} /> : <AcceptForm token={token} invite={invite} />)}
     </PublicShell>
   );
 }
@@ -81,6 +81,85 @@ function InviteProblem({ error }) {
     <StatusCard icon={icon} tone={tone} title={title}>
       {text}
     </StatusCard>
+  );
+}
+
+function InviteSummary({ invite }) {
+  return (
+    <div className="mb-5 space-y-2 text-sm">
+      <p className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">Role</span>
+        <Badge tone="primary">{invite.role_label}</Badge>
+      </p>
+      <p>
+        <span className="text-muted">Email </span>
+        <span className="font-medium [overflow-wrap:anywhere]">{invite.email}</span>
+      </p>
+      <p className="text-xs text-muted">This invite expires {formatMoment(invite.expires_at)}.</p>
+    </div>
+  );
+}
+
+// The invited email already has an account (maybe at another company): log in, then add this one.
+function JoinExisting({ token, invite }) {
+  const { user, login, logout, joinWithInvite } = useAuth();
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const sameAccount = user && (user.email || "").toLowerCase() === invite.email.toLowerCase();
+
+  async function join(event, password) {
+    event?.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      if (!sameAccount) await login({ username: invite.email, password });
+      const next = await joinWithInvite(token);
+      navigate(homePath(next), { replace: true });
+    } catch (err) {
+      setError(err);
+      setSubmitting(false);
+    }
+  }
+
+  if (error?.data?.code && STATES[error.data.code]) return <InviteProblem error={error} />;
+  const joinLabel = submitting ? "Joining…" : `Join ${invite.business_name}`;
+
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
+      <InviteSummary invite={invite} />
+      <p className="mb-4 text-sm">
+        You already have an account with this email. {invite.business_name} is added to it as another company, and you
+        can switch between your companies from the top bar.
+      </p>
+      {sameAccount ? (
+        <div className="space-y-3">
+          {error && <Alert tone="danger">{error.message}</Alert>}
+          <Button onClick={() => join()} disabled={submitting}>{joinLabel}</Button>
+        </div>
+      ) : user ? (
+        <div className="space-y-3">
+          <Alert tone="warning">
+            You're logged in as {user.email || user.name}. Log out, then log in as {invite.email} to accept.
+          </Alert>
+          <Button variant="secondary" onClick={() => logout()}>Log out</Button>
+        </div>
+      ) : (
+        <form onSubmit={(event) => join(event, new FormData(event.target).get("password"))} className="space-y-4">
+          <Input
+            label={`Password for ${invite.email}`}
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
+          {error && <Alert tone="danger">{error.message}</Alert>}
+          <FormActions>
+            <Button type="submit" disabled={submitting}>{joinLabel}</Button>
+          </FormActions>
+        </form>
+      )}
+    </section>
   );
 }
 
@@ -119,17 +198,7 @@ function AcceptForm({ token, invite }) {
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6">
-      <div className="mb-5 space-y-2 text-sm">
-        <p className="flex flex-wrap items-center gap-2">
-          <span className="text-muted">Role</span>
-          <Badge tone="primary">{invite.role_label}</Badge>
-        </p>
-        <p>
-          <span className="text-muted">Email </span>
-          <span className="font-medium [overflow-wrap:anywhere]">{invite.email}</span>
-        </p>
-        <p className="text-xs text-muted">This invite expires {formatMoment(invite.expires_at)}.</p>
-      </div>
+      <InviteSummary invite={invite} />
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <Input

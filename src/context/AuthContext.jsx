@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, setOnForbidden, setOnUnauthorized } from "../api";
+import { homePath } from "../utils/roles";
 import { rememberSignedIn } from "./signedIn";
 import { AuthContext } from "./useAuth";
 
-// user is the /api/check_session payload: id, username, role ("owner" or
-// "employee"), can_manage_clients, is_active, owner_id, timezone, email_verified,
+// user is the /api/check_session payload: id, username, name, role ("owner" or
+// "employee"), companies (every company on this login: id, business_name, role,
+// current, pending, usable), can_manage_clients, is_active, owner_id, timezone, email_verified,
 // and business_email_verified (the owner's, which gates adding clients and jobs).
 // verification is the last verification email's send result ({ email,
 // email_delivery }) from signup, an email change, or Resend, so the banner can
@@ -66,6 +68,21 @@ export function AuthProvider({ children }) {
     return next;
   }
 
+  // Work in another of your companies. Reload into its home page so nothing from the
+  // company you left (lists, caches, open forms) is shown in the new one.
+  async function switchCompany(id) {
+    const next = await api(`/api/companies/${id}/switch`, { method: "POST" });
+    window.location.assign(homePath(next));
+    return next;
+  }
+
+  // Accept an emailed invite with the account you are logged in to; the server switches you to it.
+  async function joinWithInvite(token) {
+    const next = await api(`/api/invites/${encodeURIComponent(token)}/join`, { method: "POST" });
+    setUser(next);
+    return next;
+  }
+
   async function resendVerification() {
     const result = await api("/api/me/email/resend-verification", { method: "POST" });
     setVerification(result);
@@ -87,6 +104,8 @@ export function AuthProvider({ children }) {
         logout,
         refresh,
         acceptInvite,
+        joinWithInvite,
+        switchCompany,
         verification,
         setVerification,
         resendVerification,

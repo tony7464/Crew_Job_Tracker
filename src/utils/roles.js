@@ -50,3 +50,15 @@ export function canVisit(user, allow) {
   if (allow === "requests") return canSeeRequests(user);
   return false;
 }
+
+const COMPANY_ROLE_NAMES = { owner: "Owner", manager: "Manager", employee: "Employee" };
+
+// The role in one of your companies (user.companies[].role): "owner", "manager", or "employee".
+export function companyRoleName(role) {
+  return COMPANY_ROLE_NAMES[role] || "Employee";
+}
+
+// Companies this person can work in now: approved and turned on.
+export function usableCompanies(user) {
+  return (user?.companies || []).filter((company) => company.usable);
+}

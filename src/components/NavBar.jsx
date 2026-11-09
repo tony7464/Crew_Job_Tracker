@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import { useUnreadRequests } from "../hooks";
-import { canSeeRequests, canSeeTeamSchedule, hasClientAccess, isOwner } from "../utils/roles";
+import { canSeeRequests, canSeeTeamSchedule, hasClientAccess, isOwner, roleLabel, usableCompanies } from "../utils/roles";
+import CompanySwitcher, { CompanyList } from "./CompanySwitcher";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar } from "./ui/Avatar";
 import { ButtonLink } from "./ui/Button";
@@ -127,10 +128,6 @@ function GroupMenu({ label, links, linkClass, pathname }) {
   );
 }
 
-function roleLabel(user) {
-  return isOwner(user) ? "Business owner" : "Crew member";
-}
-
 // compact hides the name on phones, where the logged-out buttons need the room.
 // tight hides it until wide screens, where the menu needs the room.
 function Brand({ compact, tight }) {
@@ -197,6 +194,7 @@ export default function NavBar() {
           <ThemeToggle />
           {!loading && user && (
             <>
+              <CompanySwitcher />
               {isOwner(user) && (
                 <NavLink
                   to={SETTINGS_LINK[0]}
@@ -270,10 +268,18 @@ export default function NavBar() {
                 <Avatar person={user} size="md" />
                 <span>
                   <span className="block leading-tight">{user.name}</span>
-                  <span className="block text-xs font-normal text-muted">{roleLabel(user)} · Account</span>
+                  <span className="block text-xs font-normal text-muted">
+                    {[roleLabel(user), user.business_name].filter(Boolean).join(" · ")} · Account
+                  </span>
                 </span>
               </span>
             </NavLink>
+            {usableCompanies(user).length > 1 && (
+              <div className="mt-1 rounded-xl border border-border p-1">
+                <p className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">Switch company</p>
+                <CompanyList onDone={close} />
+              </div>
+            )}
             <button
               type="button"
               onClick={handleLogout}

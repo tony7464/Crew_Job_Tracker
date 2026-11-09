@@ -15,6 +15,7 @@ import { useTheme } from "../context/useTheme";
 import { useSubmit } from "../hooks";
 import { prettyTimeZone } from "../utils/format";
 import { isOwner, roleLabel } from "../utils/roles";
+import CompaniesCard from "./AccountCompanies";
 import { NameForm } from "./EmployeesPage";
 
 const MIN_PASSWORD = 8;
@@ -209,6 +210,7 @@ export default function AccountPage() {
           </div>
         </Card>
         <NameCard />
+        <CompaniesCard />
         <EmailCard />
         <AppearanceCard />
         <Card title="Change password" description="Other devices are logged out; this one stays logged in.">
