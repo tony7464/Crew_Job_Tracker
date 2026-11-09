@@ -1,5 +1,6 @@
 import { formatMoney } from "../utils/format";
-import { MAX_DESCRIPTION, MAX_ITEMS, blankItem, formatPercent, formatQuantity } from "../utils/quotes";
+import { MAX_DESCRIPTION, MAX_ITEMS, blankItem, formatPercent, formatQuantity, isBlankLine } from "../utils/quotes";
+import PriceBookPicker from "./quotes/PriceBookPicker";
 import { Button } from "./ui/Button";
 import { PlusIcon, XIcon } from "./ui/Icons";
 import { cx } from "./ui/styles";
@@ -144,7 +145,8 @@ function ItemRow({ item, index, errors, lineTotal, onChange, onRemove, canRemove
 }
 
 // The line item editor for quotes and invoices: a grid from sm up, stacked cards on phones.
-export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError, disabled }) {
+// priceBook: offer "From price book" (the owner, and crew who can quote, can read it).
+export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError, disabled, priceBook = true }) {
   return (
     <div>
       <div className="hidden grid-cols-[minmax(0,1fr)_5.5rem_7.5rem_6.5rem_2.25rem] gap-x-2 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid">
@@ -171,10 +173,23 @@ export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError
       </ul>
       {listError && <p className="mt-2 text-xs font-medium text-danger">{listError}</p>}
       {items.length < MAX_ITEMS && (
-        <Button variant="soft" size="sm" className="mt-3" onClick={() => setItems([...items, blankItem()])} disabled={disabled}>
-          <PlusIcon />
-          Add item
-        </Button>
+        <div className="flex flex-wrap items-start gap-2">
+          <Button variant="soft" size="sm" className="mt-3" onClick={() => setItems([...items, blankItem()])} disabled={disabled}>
+            <PlusIcon />
+            Add item
+          </Button>
+          {priceBook && (
+            <PriceBookPicker
+              disabled={disabled}
+              onPick={(line) => {
+                // An untouched last line is replaced instead of left empty above the new one.
+                const last = items[items.length - 1];
+                const kept = last && isBlankLine(last) ? items.slice(0, -1) : items;
+                if (kept.length < MAX_ITEMS) setItems([...kept, line]);
+              }}
+            />
+          )}
+        </div>
       )}
     </div>
   );

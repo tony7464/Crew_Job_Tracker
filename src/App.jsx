@@ -39,6 +39,7 @@ import { homePath } from "./utils/roles";
 // also loads less.
 const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
+const PriceBookPage = lazy(() => import("./pages/PriceBookPage"));
 const MockCheckoutPage = lazy(() => import("./pages/MockCheckoutPage"));
 const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
@@ -66,6 +67,7 @@ const PRIVATE = [
   // Invoices are money too. They are made from a job or an accepted quote, on those pages.
   ["/invoices", InvoicesPage, "owner"],
   ["/invoices/:id", InvoiceDetail, "owner"],
+  ["/price-book", PriceBookPage, "owner"],
   ["/reports", ReportsPage, "owner"],
   ["/settings", SettingsPage, "owner"],
   ["/my-jobs", MyJobsPage, "employee"],
