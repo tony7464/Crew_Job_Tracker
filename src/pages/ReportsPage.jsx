@@ -262,7 +262,7 @@ export default function ReportsPage() {
                   {data.hours.people.map((row) => (
                     <li key={row.person.id} className="flex items-center gap-3 py-2 text-sm">
                       <Avatar person={row.person} size="sm" />
-                      <span className="flex-1">{row.person.username}</span>
+                      <span className="flex-1">{row.person.name}</span>
                       <span className="tabular-nums">{formatHours(row.minutes)} h</span>
                     </li>
                   ))}

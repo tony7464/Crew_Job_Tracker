@@ -14,7 +14,8 @@ import { useAuth } from "../context/useAuth";
 import { useTheme } from "../context/useTheme";
 import { useSubmit } from "../hooks";
 import { prettyTimeZone } from "../utils/format";
-import { isOwner } from "../utils/roles";
+import { isOwner, roleLabel } from "../utils/roles";
+import { NameForm } from "./EmployeesPage";
 
 const MIN_PASSWORD = 8;
 
@@ -47,6 +48,29 @@ function AppearanceCard() {
           </label>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function NameCard() {
+  const { user, refresh } = useAuth();
+  const [saved, setSaved] = useState(false);
+  return (
+    <Card
+      title="Your name"
+      description="Your team sees it on jobs and notes, and customers see your first name in visit texts."
+    >
+      <NameForm
+        key={`${user.first_name}-${user.last_name}`}
+        person={user}
+        onSubmit={async (body) => {
+          setSaved(false);
+          await api("/api/me/name", { method: "PATCH", body });
+          await refresh();
+          setSaved(true);
+        }}
+      />
+      {saved && <Alert tone="success" className="mt-3">Saved.</Alert>}
     </Card>
   );
 }
@@ -174,15 +198,17 @@ export default function AccountPage() {
             <Avatar person={user} size="lg" />
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2 text-lg font-semibold">
-                {user.username}
-                <Badge tone="primary">{isOwner(user) ? "Business owner" : "Crew member"}</Badge>
+                {user.name}
+                <Badge tone="primary">{roleLabel(user)}</Badge>
               </p>
+              {user.business_name && <p className="text-sm text-fg">{user.business_name}</p>}
               <p className="text-sm text-muted">
                 {user.email ? `${user.email} · ` : ""}Times in {prettyTimeZone(user.timezone)}
               </p>
             </div>
           </div>
         </Card>
+        <NameCard />
         <EmailCard />
         <AppearanceCard />
         <Card title="Change password" description="Other devices are logged out; this one stays logged in.">

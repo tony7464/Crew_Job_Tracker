@@ -51,7 +51,7 @@ export default function SignatureCard({ jobId, onSigned }) {
             <span className="text-muted">
               {" "}
               · {new Date(signature.signed_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ·
-              taken by {signature.captured_by.username}
+              taken by {signature.captured_by.name}
             </span>
           </p>
           <div className="flex flex-wrap items-center gap-3">

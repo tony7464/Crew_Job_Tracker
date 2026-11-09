@@ -171,7 +171,7 @@ export default function JobForm({ clients, employees, initial, onSubmit, submitL
                     className="h-4 w-4"
                   />
                   <Avatar person={employee} size="xs" />
-                  {employee.username}
+                  {employee.name}
                   {!employee.is_active && <span className="text-muted">(inactive)</span>}
                 </label>
               ))}

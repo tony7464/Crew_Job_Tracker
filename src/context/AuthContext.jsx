@@ -41,6 +41,8 @@ export function AuthProvider({ children }) {
 
   async function signup(body) {
     const next = await api("/api/signup", { method: "POST", body, skipAuth: true });
+    // Joining with a company code waits for the owner's OK: no session yet.
+    if (next.pending) return next;
     setUser(next);
     setVerification(next.verification || null);
     return next;

@@ -111,7 +111,7 @@ export default function ChecklistCard({ jobId, onChange }) {
                   <span className={cx("block text-sm", item.done && "text-muted line-through")}>{item.text}</span>
                   {item.done && item.done_by && (
                     <span className="block text-xs text-muted">
-                      {item.done_by.username} ·{" "}
+                      {item.done_by.name} ·{" "}
                       {new Date(item.done_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                     </span>
                   )}

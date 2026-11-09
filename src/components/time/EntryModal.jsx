@@ -63,7 +63,7 @@ export default function EntryModal({ entry, jobId, people = [], onClose, onSaved
   return (
     <Modal
       title={entry ? "Edit time" : "Add time"}
-      description={entry ? `${entry.person.username} on ${entry.job_label}` : "For time someone forgot to clock."}
+      description={entry ? `${entry.person.name} on ${entry.job_label}` : "For time someone forgot to clock."}
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-4">
@@ -71,14 +71,14 @@ export default function EntryModal({ entry, jobId, people = [], onClose, onSaved
           <Select label="Person" value={values.user_id} onChange={set("user_id")} required>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
-                {person.username}
+                {person.name}
               </option>
             ))}
           </Select>
         )}
         {entry?.open && (
           <p className="rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning-soft-fg">
-            {entry.person.username} is still clocked in. Saving with a clock-out time clocks them out.
+            {entry.person.name} is still clocked in. Saving with a clock-out time clocks them out.
           </p>
         )}
         <div className="grid gap-4 sm:grid-cols-2">

@@ -116,7 +116,7 @@ function columnsFor(data, hidden, byColumn, mode) {
     .map((person) => ({
       key: `e:${person.id}`,
       person,
-      label: person.username,
+      label: person.name,
       color: personColor(person),
       items: byColumn.get(`e:${person.id}`) || [],
     }));
@@ -135,7 +135,7 @@ function jobLabel(item, column) {
     `${formatTime(job.time)}, ${minutes} minutes`,
     job.kind === "estimate" ? `Estimate visit: ${job.service_type}` : job.service_type,
     job.client_name,
-    column.person ? column.person.username : "Unassigned",
+    column.person ? column.person.name : "Unassigned",
     job.status !== "scheduled" ? job.status : null,
   ];
   return parts.filter(Boolean).join(", ");
@@ -146,12 +146,12 @@ function Crewmates({ job, except }) {
   const others = job.assignees.filter((person) => person.id !== except);
   if (!others.length) return null;
   return (
-    <span className="cjt-dots" title={`With ${others.map((person) => person.username).join(", ")}`}>
+    <span className="cjt-dots" title={`With ${others.map((person) => person.name).join(", ")}`}>
       {others.slice(0, 3).map((person) => {
         const color = personColor(person);
         return (
           <span key={person.id} style={{ backgroundColor: color, color: readableText(color) }}>
-            {initials(person.username)}
+            {initials(person.name)}
           </span>
         );
       })}

@@ -16,7 +16,7 @@ const FOOTER = "Invite by Crew Job Tracker";
 
 // The states the server reports with a code, and what to tell the invitee.
 const STATES = {
-  invite_used: [CheckIcon, "neutral", "This invite was already used", "Log in with the username you picked when you accepted it."],
+  invite_used: [CheckIcon, "neutral", "This invite was already used", "Log in with your email and the password you picked."],
   invite_revoked: [XIcon, "neutral", "This invite was cancelled", "The business cancelled it. Ask them to send you a new one."],
   invite_expired: [ClockIcon, "warning", "This invite has expired", "Invites last 7 days. Ask the business to send it again; the same link will work after they do."],
   invite_invalid: [AlertIcon, "danger", "This invite link does not work", "Check that you opened the whole link from the email, or ask the business for a new invite."],
@@ -100,7 +100,11 @@ function AcceptForm({ token, invite }) {
     setSubmitting(true);
     setError(null);
     try {
-      const user = await acceptInvite(token, { username: form.get("username"), password: form.get("password") });
+      const user = await acceptInvite(token, {
+        first_name: form.get("first_name"),
+        last_name: form.get("last_name"),
+        password: form.get("password"),
+      });
       navigate(homePath(user), { replace: true });
     } catch (err) {
       setError(err);
@@ -127,15 +131,25 @@ function AcceptForm({ token, invite }) {
         <p className="text-xs text-muted">This invite expires {formatMoment(invite.expires_at)}.</p>
       </div>
       <form onSubmit={onSubmit} className="space-y-4">
-        <Input
-          label="Pick a username"
-          name="username"
-          autoComplete="username"
-          autoCapitalize="none"
-          required
-          error={first("username")}
-          hint="You log in with this. It must not be taken by anyone else."
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            label="First name"
+            name="first_name"
+            autoComplete="given-name"
+            maxLength={60}
+            required
+            error={first("first_name")}
+          />
+          <Input
+            label="Last name"
+            name="last_name"
+            autoComplete="family-name"
+            maxLength={60}
+            required
+            error={first("last_name")}
+          />
+        </div>
+        <p className="-mt-2 text-xs text-muted">You log in with your email ({invite.email}) and the password below.</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             label="Password"
@@ -156,7 +170,7 @@ function AcceptForm({ token, invite }) {
             required
           />
         </div>
-        {error && !first("username") && !first("password") && <Alert tone="danger">{error.message}</Alert>}
+        {error && !first("first_name") && !first("last_name") && !first("password") && <Alert tone="danger">{error.message}</Alert>}
         <FormActions>
           <Button type="submit" disabled={submitting}>
             {submitting ? "Joining…" : `Join ${invite.business_name}`}

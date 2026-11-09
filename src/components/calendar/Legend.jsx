@@ -43,7 +43,7 @@ function Chip({ label, color, hatched = false, on, onToggle, note }) {
 // one pill; the Only half appears on hover or keyboard focus with a mouse, is always
 // there on touch screens, and stays visible (as "Only ✓") while it is active.
 function PersonChip({ person, on, only, onToggle, onOnly }) {
-  const label = person.username;
+  const label = person.name;
   return (
     <span
       data-only={only || undefined}

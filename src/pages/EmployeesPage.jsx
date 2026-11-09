@@ -15,6 +15,7 @@ import { Modal } from "../components/ui/Modal";
 import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { useAsync, useSubmit } from "../hooks";
 import EmployeeInvites, { InviteButton } from "./EmployeeInvites";
+import { JoinCodeCard, JoinRequests } from "./EmployeeJoinRequests";
 
 const MIN_PASSWORD = 8;
 
@@ -31,11 +32,12 @@ export default function EmployeesPage() {
     setData((current) => current.map((employee) => (employee.id === updated.id ? updated : employee)));
   }
 
+  function add(created) {
+    setData((current) => [...current, created].sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
   async function createEmployee(body) {
-    const created = await api("/api/employees", { method: "POST", body });
-    setData((current) =>
-      [...current, created].sort((a, b) => a.username.localeCompare(b.username)),
-    );
+    add(await api("/api/employees", { method: "POST", body }));
     setAdding(false);
   }
 
@@ -59,9 +61,10 @@ export default function EmployeesPage() {
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
         title="Employees"
-        description="Employees log in on the same page you do. They see only the jobs you assign them, never prices. Invite them by email, or add them yourself with a temporary password."
+        description="Your team logs in on the same page you do. Employees see only the jobs you assign them, never prices. Managers also handle clients, estimate visits, and quotes. Share your company code, invite people by email, or add them yourself."
         actions={actions}
       />
+      <JoinRequests onApproved={add} />
       <section>
         <SectionHeader
           title="Your crew"
@@ -82,6 +85,7 @@ export default function EmployeesPage() {
           />
         )}
       </section>
+      <JoinCodeCard />
       <EmployeeInvites inviting={inviting} setInviting={setInviting} />
       <BusinessSettings />
       {adding && (
@@ -99,6 +103,8 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
   function onSubmitForm(event) {
     const form = new FormData(event.target);
     handleSubmit(event, {
+      first_name: form.get("first_name") || undefined,
+      last_name: form.get("last_name") || undefined,
       username: form.get("username"),
       password: form.get("password"),
       email: form.get("email") || null,
@@ -109,8 +115,19 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
 
   return (
     <form onSubmit={onSubmitForm} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <Input label="First name" name="first_name" autoComplete="off" maxLength={60} required />
+        <Input label="Last name" name="last_name" autoComplete="off" maxLength={60} required />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Username" name="username" autoComplete="off" autoCapitalize="none" required />
+        <Input
+          label="Username"
+          name="username"
+          autoComplete="off"
+          autoCapitalize="none"
+          required
+          hint="They log in with this, or their email."
+        />
         <Input
           label="Temporary password"
           name="password"
@@ -123,8 +140,8 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
       <Input label="Email (optional)" name="email" type="email" autoComplete="off" />
       <Checkbox
         name="can_manage_clients"
-        label="Client access"
-        description="Can view, add, and edit clients, and book estimate visits. Never sees job prices."
+        label="Manager"
+        description="Can view, add, and edit clients, book estimate visits, and see the team schedule. Never sees job prices."
       />
       <Checkbox
         name="can_quote"
@@ -132,7 +149,7 @@ function CreateEmployeeForm({ onSubmit, onCancel }) {
         description="Prices and sends the quote for estimate visits they go on (any visit, with client access)."
       />
       <Alert tone="info">
-        Share the username and temporary password with them. They can change the password from Account.
+        Share the username and temporary password with them. They can also log in with their email. They can change the password from Account.
         A calendar color is picked for them; you can change it after.
       </Alert>
       <ErrorMessage error={error} />
@@ -152,6 +169,7 @@ function EmployeeCard({ employee, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [resetting, setResetting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const [notice, setNotice] = useState(null);
 
   async function run(request, message) {
@@ -179,14 +197,15 @@ function EmployeeCard({ employee, onChange }) {
         <Avatar person={employee} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-2 font-semibold">
-            <span className="truncate">{employee.username}</span>
+            <span className="truncate">{employee.name}</span>
             <Badge tone={employee.is_active ? "success" : "neutral"}>
               {employee.is_active ? "Active" : "Inactive"}
             </Badge>
-            {employee.can_manage_clients && <Badge tone="primary">Client access</Badge>}
+            <Badge tone="primary">{employee.can_manage_clients ? "Manager" : "Employee"}</Badge>
             {employee.can_quote && <Badge tone="primary">Can quote</Badge>}
           </p>
           <p className="mt-0.5 truncate text-sm text-muted">{employee.email || "No email"}</p>
+          <p className="mt-0.5 truncate text-xs text-muted">Username: {employee.username}</p>
         </div>
       </div>
       <ColorPicker
@@ -202,7 +221,7 @@ function EmployeeCard({ employee, onChange }) {
           disabled={busy}
           onClick={() => patch({ can_manage_clients: !employee.can_manage_clients }).catch(() => {})}
         >
-          {employee.can_manage_clients ? "Remove client access" : "Allow client access"}
+          {employee.can_manage_clients ? "Make employee" : "Make manager"}
         </Button>
         <Button
           variant="secondary"
@@ -211,6 +230,15 @@ function EmployeeCard({ employee, onChange }) {
           onClick={() => patch({ can_quote: !employee.can_quote }).catch(() => {})}
         >
           {employee.can_quote ? "Stop quoting" : "Allow quoting on site"}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          aria-expanded={renaming}
+          onClick={() => setRenaming((value) => !value)}
+        >
+          Edit name
         </Button>
         <Button
           variant="secondary"
@@ -228,17 +256,27 @@ function EmployeeCard({ employee, onChange }) {
           onClick={() =>
             patch(
               { is_active: !employee.is_active },
-              employee.is_active ? `${employee.username} was logged out and can no longer log in.` : null,
+              employee.is_active ? `${employee.name} was logged out and can no longer log in.` : null,
             ).catch(() => {})
           }
         >
           {employee.is_active ? "Deactivate" : "Reactivate"}
         </Button>
       </div>
+      {renaming && (
+        <NameForm
+          person={employee}
+          onSubmit={async (body) => {
+            await patch(body);
+            setRenaming(false);
+          }}
+          onCancel={() => setRenaming(false)}
+        />
+      )}
       {resetting && (
         <ResetPasswordForm
           onSubmit={async (password) => {
-            await patch({ password }, `New temporary password set. ${employee.username} was logged out.`);
+            await patch({ password }, `New temporary password set. ${employee.name} was logged out.`);
             setResetting(false);
           }}
           onCancel={() => setResetting(false)}
@@ -262,6 +300,36 @@ function EmployeeCard({ employee, onChange }) {
         </div>
       </details>
     </li>
+  );
+}
+
+export function NameForm({ person, onSubmit, onCancel, submitLabel = "Save name" }) {
+  const { error, submitting, handleSubmit } = useSubmit(onSubmit, true);
+
+  return (
+    <form
+      onSubmit={(event) => {
+        const form = new FormData(event.target);
+        handleSubmit(event, { first_name: form.get("first_name"), last_name: form.get("last_name") });
+      }}
+      className="space-y-3 rounded-lg bg-surface-2 p-3"
+    >
+      <div className="grid grid-cols-2 gap-3">
+        <Input label="First name" name="first_name" defaultValue={person.first_name || ""} maxLength={60} required />
+        <Input label="Last name" name="last_name" defaultValue={person.last_name || ""} maxLength={60} required />
+      </div>
+      <div className="flex flex-wrap justify-end gap-2">
+        {onCancel && (
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Saving…" : submitLabel}
+        </Button>
+      </div>
+      <ErrorMessage error={error} />
+    </form>
   );
 }
 

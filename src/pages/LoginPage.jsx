@@ -19,14 +19,25 @@ export default function LoginPage() {
       }
       footer={
         <>
-          New business?{" "}
+          New here?{" "}
           <Link to="/signup" className="link">
-            Create an account
+            Start a business
+          </Link>{" "}
+          or{" "}
+          <Link to="/signup?role=employee" className="link">
+            join your company
           </Link>
         </>
       }
     >
-      <Input label="Username" name="username" autoComplete="username" autoCapitalize="none" required />
+      <Input
+        label="Email"
+        name="username"
+        autoComplete="username"
+        autoCapitalize="none"
+        required
+        hint="Have an older account? Your username works too."
+      />
       <Input label="Password" name="password" type="password" autoComplete="current-password" required />
     </AuthScreen>
   );

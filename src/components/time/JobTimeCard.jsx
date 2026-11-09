@@ -40,7 +40,7 @@ export default function JobTimeCard({ jobId, crew, reloadKey = 0 }) {
   const total = data.entries.reduce((sum, entry) => sum + liveMinutes(entry, now), 0);
   const scheduled = data.scheduled_minutes;
   const over = total - scheduled;
-  const people = [...crew, { id: user.id, username: user.username }];
+  const people = [...crew, { id: user.id, username: user.username, name: user.name }];
 
   function saved(entry) {
     setData((current) => {
