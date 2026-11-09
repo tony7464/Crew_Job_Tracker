@@ -15,6 +15,7 @@ import { buttonClass } from "../components/ui/styles";
 import { useAuth } from "../context/useAuth";
 import { useAsync } from "../hooks";
 import SettingsPaymentsCard from "./SettingsPaymentsCard";
+import SettingsQuickBooksCard from "./SettingsQuickBooksCard";
 import SettingsChecklistsCard from "./SettingsChecklistsCard";
 import SettingsMessagesCard from "./SettingsMessagesCard";
 import SettingsRemindersCard from "./SettingsRemindersCard";
@@ -314,6 +315,7 @@ export default function SettingsPage() {
         <SettingsMessagesCard />
         <SettingsRemindersCard />
         <SettingsPaymentsCard />
+        <SettingsQuickBooksCard />
       </div>
     </div>
   );
