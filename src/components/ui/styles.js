@@ -6,11 +6,11 @@ export function cx(...classes) {
 }
 
 const BUTTON_BASE =
-  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium " +
-  "transition-colors disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55";
+  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold " +
+  "transition duration-150 active:scale-[.97] disabled:pointer-events-none disabled:opacity-55 aria-disabled:pointer-events-none aria-disabled:opacity-55";
 
 const BUTTON_VARIANTS = {
-  primary: "bg-primary text-primary-fg shadow-card hover:bg-primary-hover",
+  primary: "bg-brand text-primary-fg shadow-glow hover:-translate-y-px hover:brightness-110",
   secondary: "border border-border-strong bg-surface text-fg shadow-card hover:bg-surface-2",
   ghost: "text-muted hover:bg-surface-2 hover:text-fg",
   soft: "bg-primary-soft text-primary-soft-fg hover:bg-surface-3",

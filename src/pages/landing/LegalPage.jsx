@@ -40,7 +40,7 @@ export default function LegalPage({ page }) {
   }, [title]);
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen">
       <LandingHeader />
       <main id="main" className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold tracking-tight text-fg">{title}</h1>

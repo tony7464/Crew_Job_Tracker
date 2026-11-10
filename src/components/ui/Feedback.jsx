@@ -41,11 +41,11 @@ export function EmptyState({ icon: Icon = InboxIcon, title, description, action,
   return (
     <div
       className={cx(
-        "flex flex-col items-center rounded-xl border border-dashed border-border-strong px-6 py-10 text-center",
+        "flex flex-col items-center rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-10 text-center",
         className,
       )}
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-muted">
+      <span className="flex h-12 w-12 animate-float items-center justify-center rounded-2xl bg-primary-soft text-primary-soft-fg">
         <Icon className="h-5 w-5" />
       </span>
       <p className="mt-3 font-medium text-fg">{title}</p>

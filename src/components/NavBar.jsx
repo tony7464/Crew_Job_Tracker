@@ -7,7 +7,8 @@ import CompanySwitcher, { CompanyList } from "./CompanySwitcher";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar } from "./ui/Avatar";
 import { ButtonLink } from "./ui/Button";
-import { BriefcaseIcon, ChevronDownIcon, LogOutIcon, MenuIcon, SettingsIcon, XIcon } from "./ui/Icons";
+import { ChevronDownIcon, LogOutIcon, MenuIcon, SettingsIcon, XIcon } from "./ui/Icons";
+import { LogoMark } from "./ui/Logo";
 import { cx } from "./ui/styles";
 
 const OWNER_LINKS = [
@@ -130,14 +131,12 @@ function GroupMenu({ label, links, linkClass, pathname }) {
 }
 
 // compact hides the name on phones, where the logged-out buttons need the room.
-// tight hides it until wide screens, where the menu needs the room.
+// tight hides it from tablet width up, where the menu needs the room.
 function Brand({ compact, tight }) {
   return (
-    <Link to="/" className="flex items-center gap-2.5 rounded-lg font-semibold tracking-tight text-fg">
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-fg shadow-card">
-        <BriefcaseIcon className="h-[18px] w-[18px]" />
-      </span>
-      <span className={compact ? "hidden sm:inline" : tight ? "md:hidden xl:inline" : undefined}>
+    <Link to="/" className="flex items-center gap-2.5 whitespace-nowrap rounded-lg font-display text-[17px] font-bold tracking-tight text-fg">
+      <LogoMark className="h-8 w-8" />
+      <span className={compact ? "hidden sm:inline" : tight ? "md:hidden" : undefined}>
         Crew Job Tracker
       </span>
     </Link>
@@ -161,7 +160,7 @@ export default function NavBar() {
   const desktopLink = ({ isActive }) =>
     cx(
       "rounded-lg px-2 py-1.5 text-[13px] font-medium transition-colors lg:px-3 lg:text-sm",
-      isActive ? "bg-primary-soft text-primary-soft-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+      isActive ? "bg-brand text-primary-fg shadow-glow" : "text-muted hover:bg-surface-2 hover:text-fg",
     );
   const mobileLink = ({ isActive }) =>
     cx(
@@ -170,8 +169,8 @@ export default function NavBar() {
     );
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6">
+    <header className="sticky top-0 z-30 px-2 pt-2 sm:px-4 sm:pt-3">
+      <div className="glass mx-auto flex h-14 max-w-6xl items-center gap-2 rounded-2xl border border-border px-3 shadow-card sm:px-4">
         <Brand compact={!user} tight={Boolean(user)} />
         {!loading && user && (
           <nav aria-label="Main" className="ml-1 hidden items-center gap-0.5 md:flex lg:ml-6 lg:gap-1">
@@ -230,7 +229,7 @@ export default function NavBar() {
                 className="hidden h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-muted hover:bg-surface-2 hover:text-fg md:inline-flex"
               >
                 <LogOutIcon />
-                <span className="sr-only lg:not-sr-only">Log out</span>
+                <span className="sr-only whitespace-nowrap xl:not-sr-only">Log out</span>
               </button>
               <button
                 type="button"
@@ -256,8 +255,11 @@ export default function NavBar() {
         </div>
       </div>
       {menuOpen && user && (
-        <div id="mobile-menu" className="border-t border-border bg-surface md:hidden">
-          <nav aria-label="Main" className="mx-auto max-w-6xl space-y-1 px-4 py-3">
+        <div
+          id="mobile-menu"
+          className="glass mx-auto mt-2 max-h-[calc(100dvh-5.5rem)] max-w-6xl animate-rise overflow-y-auto rounded-2xl border border-border shadow-pop md:hidden"
+        >
+          <nav aria-label="Main" className="space-y-1 px-3 py-3">
             {[...linksFor(user), ...(isOwner(user) ? [SETTINGS_LINK] : [])].map(([to, label]) => (
               <NavLink key={to} to={to} className={mobileLink} onClick={close}>
                 <LinkLabel to={to} label={label} unread={unread} />
