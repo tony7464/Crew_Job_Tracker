@@ -45,6 +45,8 @@ const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const LegalPage = lazy(() => import("./pages/landing/LegalPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 
 // [path, page, who may visit]. See canVisit in utils/roles.js.
 const PRIVATE = [
@@ -153,6 +155,8 @@ export default function App() {
             <Route path="/start" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             {PRIVATE.map(([path, Page, allow]) => (
               <Route
                 key={path}

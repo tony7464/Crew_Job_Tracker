@@ -18,7 +18,9 @@ function waitLabel(seconds) {
   return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
 }
 
-export default function AuthScreen({ title, subtitle, submitLabel, onSubmit, footer, children }) {
+// done: shown in place of the form once the page's job is finished (such as "Check your email").
+// allowSignedIn: stay on the page when someone is already logged in (the reset link).
+export default function AuthScreen({ title, subtitle, submitLabel, onSubmit, footer, children, done, allowSignedIn = false }) {
   const { user, loading } = useAuth();
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +45,7 @@ export default function AuthScreen({ title, subtitle, submitLabel, onSubmit, foo
   const secondsLeft = lockedUntil ? Math.max(1, Math.ceil((lockedUntil - now) / 1000)) : 0;
 
   if (loading) return <Loading />;
-  if (user) return <Navigate to={homePath(user)} replace />;
+  if (user && !allowSignedIn) return <Navigate to={homePath(user)} replace />;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -51,6 +53,7 @@ export default function AuthScreen({ title, subtitle, submitLabel, onSubmit, foo
     setError(null);
     try {
       await onSubmit(new FormData(event.target));
+      setSubmitting(false);
     } catch (err) {
       setError(err);
       setSubmitting(false);
@@ -70,24 +73,28 @@ export default function AuthScreen({ title, subtitle, submitLabel, onSubmit, foo
           <h1 className="mt-4 font-display text-3xl font-bold tracking-tight">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
         </div>
-        <form
-          onSubmit={handleSubmit}
-          className="glass mt-8 space-y-4 rounded-2xl border border-border p-5 shadow-pop sm:p-6"
-        >
-          {children}
-          {error?.status === 429 ? (
-            <Alert tone="warning" title="Too many attempts">
-              {secondsLeft
-                ? `For your security, this is paused. Try again in ${waitLabel(secondsLeft)}.`
-                : error.message}
-            </Alert>
-          ) : (
-            <ErrorMessage error={error} />
-          )}
-          <Button type="submit" disabled={submitting || secondsLeft > 0} block size="lg">
-            {submitting ? "Please wait…" : secondsLeft ? `Try again in ${waitLabel(secondsLeft)}` : submitLabel}
-          </Button>
-        </form>
+        {done ? (
+          <div className="glass mt-8 space-y-4 rounded-2xl border border-border p-5 shadow-pop sm:p-6">{done}</div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="glass mt-8 space-y-4 rounded-2xl border border-border p-5 shadow-pop sm:p-6"
+          >
+            {children}
+            {error?.status === 429 ? (
+              <Alert tone="warning" title="Too many attempts">
+                {secondsLeft
+                  ? `For your security, this is paused. Try again in ${waitLabel(secondsLeft)}.`
+                  : error.message}
+              </Alert>
+            ) : (
+              <ErrorMessage error={error} />
+            )}
+            <Button type="submit" disabled={submitting || secondsLeft > 0} block size="lg">
+              {submitting ? "Please wait…" : secondsLeft ? `Try again in ${waitLabel(secondsLeft)}` : submitLabel}
+            </Button>
+          </form>
+        )}
         <p className="mt-6 text-center text-sm text-muted">{footer}</p>
       </section>
       {wide && (
