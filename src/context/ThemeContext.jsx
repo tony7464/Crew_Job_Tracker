@@ -4,7 +4,7 @@ import { ThemeContext } from "./useTheme";
 // Must match the inline script in index.html.
 const STORAGE_KEY = "theme";
 const DARK_QUERY = "(prefers-color-scheme: dark)";
-const THEME_COLORS = { light: "#f5f6f8", dark: "#0c1018" };
+const THEME_COLORS = { light: "#f4f2fb", dark: "#0b0a14" };
 
 function readPreference() {
   try {

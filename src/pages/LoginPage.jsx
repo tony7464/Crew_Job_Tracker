@@ -39,6 +39,11 @@ export default function LoginPage() {
         hint="Have an older account? Your username works too."
       />
       <Input label="Password" name="password" type="password" autoComplete="current-password" required />
+      <p className="text-right text-sm">
+        <Link to="/forgot-password" className="link">
+          Forgot your password?
+        </Link>
+      </p>
     </AuthScreen>
   );
 }

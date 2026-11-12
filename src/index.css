@@ -6,26 +6,35 @@
 /* ---- Theme tokens ----------------------------------------------------------
    Every color in the app comes from these variables, so light and dark mode only
    swap values here. Tailwind reads them through @theme inline below, which gives
-   utilities like bg-surface, text-muted, border-border, and bg-primary. */
+   utilities like bg-surface, text-muted, border-border, and bg-primary.
+   The look: electric violet on lilac paper (light) or indigo night (dark), with a
+   hi-vis lime accent for the moments that should pop. */
 :root {
   color-scheme: light;
-  --bg: #f5f6f8;
+  --bg: #f4f2fb;
   --surface: #ffffff;
-  --surface-2: #f2f4f7;
-  --surface-3: #e8ebf0;
-  --border: #e3e6eb;
-  --border-strong: #cbd1da;
-  --text: #111827;
-  --muted: #576072;
-  --subtle: #8a92a1;
+  --surface-2: #f3f1fa;
+  --surface-3: #e7e3f5;
+  --border: #e3dff0;
+  --border-strong: #c9c3de;
+  --text: #15122b;
+  --muted: #5a5575;
+  --subtle: #8b86a5;
 
-  --primary: #0b6aa2;
+  --primary: #5b3df5;
   /* Chart bars: checked for contrast and lightness on this surface (dataviz validator). */
-  --chart-bar: #0b6aa2;
-  --primary-hover: #095885;
+  --chart-bar: #5b3df5;
+  --primary-hover: #4a2ee0;
   --primary-fg: #ffffff;
-  --primary-soft: #e6f2fa;
-  --primary-soft-fg: #0a5480;
+  --primary-soft: #ece8ff;
+  --primary-soft-fg: #4326c9;
+  /* The second stop of the brand gradient. */
+  --primary-2: #9a3df5;
+
+  /* Hi-vis lime: badges, the "done" state, and calls to action on dark panels. */
+  --accent: #c6f432;
+  --accent-hover: #d4f95e;
+  --accent-fg: #1a2400;
 
   --danger: #c0262d;
   --danger-hover: #a11f25;
@@ -38,32 +47,46 @@
   --warning: #b45309;
   --warning-soft: #fdf3e2;
   --warning-soft-fg: #8a3f07;
-  --neutral-soft: #eceff3;
-  --neutral-soft-fg: #4b5463;
+  --neutral-soft: #ece9f5;
+  --neutral-soft-fg: #4d4866;
 
-  --ring: color-mix(in oklab, var(--primary) 35%, transparent);
-  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.05);
-  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.22), 0 2px 6px rgb(16 24 40 / 0.08);
+  --ring: color-mix(in oklab, var(--primary) 32%, transparent);
+  --shadow-card: 0 1px 2px rgb(38 24 110 / 0.05), 0 10px 28px -18px rgb(70 44 190 / 0.28);
+  --shadow-pop: 0 24px 48px -16px rgb(48 28 140 / 0.32), 0 4px 10px rgb(38 24 110 / 0.08);
+  --shadow-glow: 0 8px 22px -8px color-mix(in oklab, var(--primary) 70%, transparent);
+
+  /* The soft colored light behind every page. */
+  --aurora-1: rgb(124 92 255 / 0.2);
+  --aurora-2: rgb(198 244 50 / 0.2);
+  --aurora-3: rgb(255 120 200 / 0.12);
+  --glass: rgb(255 255 255 / 0.72);
+  --grad-a: #5b3df5;
+  --grad-b: #c23df5;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0c1018;
-  --surface: #131925;
-  --surface-2: #1a2130;
-  --surface-3: #232b3c;
-  --border: #252e40;
-  --border-strong: #354057;
-  --text: #e7eaf0;
-  --muted: #a1abbc;
-  --subtle: #737e92;
+  --bg: #0b0a14;
+  --surface: #141224;
+  --surface-2: #1c1931;
+  --surface-3: #272342;
+  --border: #272341;
+  --border-strong: #3b3661;
+  --text: #edebf8;
+  --muted: #a9a5c3;
+  --subtle: #777292;
 
-  --primary: #4cb8f0;
-  --chart-bar: #2f9bd6;
-  --primary-hover: #7ccbf5;
-  --primary-fg: #04263b;
-  --primary-soft: rgb(76 184 240 / 0.14);
-  --primary-soft-fg: #8fd3f7;
+  --primary: #8f7bff;
+  --chart-bar: #7c66f5;
+  --primary-hover: #a999ff;
+  --primary-fg: #0e0930;
+  --primary-soft: rgb(143 123 255 / 0.16);
+  --primary-soft-fg: #c3b8ff;
+  --primary-2: #c77bff;
+
+  --accent: #c6f432;
+  --accent-hover: #d4f95e;
+  --accent-fg: #1a2400;
 
   --danger: #f2777a;
   --danger-hover: #f69a9c;
@@ -76,12 +99,20 @@
   --warning: #f3b545;
   --warning-soft: rgb(243 181 69 / 0.13);
   --warning-soft-fg: #f7cd7c;
-  --neutral-soft: rgb(161 171 188 / 0.14);
-  --neutral-soft-fg: #c3cad6;
+  --neutral-soft: rgb(169 165 195 / 0.14);
+  --neutral-soft-fg: #c8c4dc;
 
   --ring: color-mix(in oklab, var(--primary) 45%, transparent);
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 12px 30px -18px rgb(0 0 0 / 0.8);
+  --shadow-pop: 0 28px 56px -16px rgb(0 0 0 / 0.75), 0 4px 10px rgb(0 0 0 / 0.45);
+  --shadow-glow: 0 8px 26px -8px color-mix(in oklab, var(--primary) 75%, transparent);
+
+  --aurora-1: rgb(110 80 255 / 0.26);
+  --aurora-2: rgb(198 244 50 / 0.09);
+  --aurora-3: rgb(255 80 190 / 0.1);
+  --glass: rgb(20 18 36 / 0.7);
+  --grad-a: #a999ff;
+  --grad-b: #c6f432;
 }
 
 @theme inline {
@@ -99,6 +130,10 @@
   --color-primary-fg: var(--primary-fg);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-primary-2: var(--primary-2);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
   --color-danger: var(--danger);
   --color-danger-hover: var(--danger-hover);
   --color-danger-fg: var(--danger-fg);
@@ -115,11 +150,52 @@
   --color-ring: var(--ring);
   --shadow-card: var(--shadow-card);
   --shadow-pop: var(--shadow-pop);
+  --shadow-glow: var(--shadow-glow);
 }
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  /* Both fonts are bundled (see main.jsx), so nothing loads from another site. */
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  /* Rounder corners everywhere. */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.7rem;
+  --radius-xl: 1.05rem;
+  --radius-2xl: 1.4rem;
+  --radius-3xl: 2rem;
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pop: pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+  }
 }
 
 @layer base {
@@ -130,12 +206,35 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* The body is see-through so the aurora (below) shows behind every page. */
   body {
-    @apply min-h-screen bg-bg font-sans text-fg antialiased;
+    @apply min-h-screen font-sans text-fg antialiased;
+    font-feature-settings: "cv11", "ss03";
+  }
+
+  /* Aurora: three soft lights fixed behind the page. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60vw 50vh at 8% -10%, var(--aurora-1), transparent 70%),
+      radial-gradient(50vw 45vh at 100% 0%, var(--aurora-2), transparent 70%),
+      radial-gradient(55vw 50vh at 60% 110%, var(--aurora-3), transparent 70%);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
   }
 
   ::selection {
-    background-color: color-mix(in oklab, var(--primary) 28%, transparent);
+    background-color: color-mix(in oklab, var(--accent) 70%, transparent);
+    color: var(--accent-fg);
   }
 
   input[type="checkbox"],
@@ -152,11 +251,17 @@
   html:has(dialog[open]) {
     overflow: hidden;
   }
+
+  @media print {
+    body::before {
+      display: none;
+    }
+  }
 }
 
 /* Text inputs, selects, and textareas. Used by components/Field.jsx. */
 @utility field {
-  @apply block w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-base text-fg shadow-card transition-colors placeholder:text-subtle sm:text-sm;
+  @apply block w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-base text-fg shadow-card transition-[border-color,box-shadow] placeholder:text-subtle sm:text-sm;
   @apply focus:border-primary focus:ring-4 focus:ring-ring focus:outline-none;
   @apply disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-muted;
 }
@@ -171,6 +276,139 @@
 /* Inline text links. */
 @utility link {
   @apply font-medium text-primary underline-offset-2 hover:text-primary-hover hover:underline;
+}
+
+/* Frosted glass: the top bar, menus, and labels over the 3D scene. */
+@utility glass {
+  background-color: var(--glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+}
+
+/* The brand gradient, as a fill and as text. */
+@utility bg-brand {
+  background-image: linear-gradient(135deg, var(--primary), var(--primary-2));
+}
+
+@utility text-gradient {
+  background-image: linear-gradient(100deg, var(--grad-a), var(--grad-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* A faint dot grid, for panels. */
+@utility bg-dots {
+  background-image: radial-gradient(color-mix(in oklab, var(--text) 14%, transparent) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* ---- Motion ------------------------------------------------------------------
+   Tilt: a card that leans toward the pointer. components/ui/Motion.jsx sets
+   --rx/--ry (degrees) and --mx/--my (the pointer, in percent) as it moves. */
+.tilt {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition:
+    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.3s;
+  will-change: transform;
+}
+
+.tilt.is-tilting {
+  transition:
+    transform 0.08s linear,
+    box-shadow 0.3s;
+  box-shadow: var(--shadow-pop);
+}
+
+/* The glare that follows the pointer. */
+.tilt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(
+    240px circle at var(--mx) var(--my),
+    color-mix(in oklab, var(--primary) 22%, transparent),
+    transparent 65%
+  );
+}
+
+.tilt.is-tilting::after {
+  opacity: 1;
+}
+
+/* Children with .tilt-lift float above the card as it leans. */
+.tilt-lift {
+  transform: translateZ(28px);
+}
+
+/* Reveal: fades and rises in the first time it scrolls into view (Motion.jsx adds .is-in). */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) var(--reveal-delay, 0ms),
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) var(--reveal-delay, 0ms);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* A gradient hairline around a panel (the popular plan, the hero stage). */
+.ring-brand {
+  position: relative;
+}
+
+.ring-brand::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--primary), var(--accent), var(--primary-2));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Anyone who asks for less motion gets none of the above. */
+@media (prefers-reduced-motion: reduce) {
+  .tilt,
+  .tilt.is-tilting {
+    transform: none;
+    transition: none;
+  }
+  .tilt-lift {
+    transform: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .animate-marquee,
+  .animate-float,
+  .animate-pop,
+  .animate-rise {
+    animation: none;
+  }
 }
 
 /* ---- Schedule calendar (FullCalendar) -----------------------------------------
@@ -734,4 +972,23 @@
 .cjt-chip-half:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
+}
+
+/* The bar that fills while a "how it works" step is showing. The duration is set inline. */
+.step-timer {
+  transform-origin: left;
+  animation: step-fill linear forwards;
+}
+@keyframes step-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-timer {
+    animation: none;
+  }
 }
