@@ -11,7 +11,8 @@ export const QUOTE_STATUSES = ["draft", "sent", "accepted", "declined"];
 // Same limits as the server.
 export const MAX_ITEMS = 50;
 export const MAX_TITLE = 120;
-export const MAX_DESCRIPTION = 200;
+// Room for a service's scope and exclusions under its name; most lines are a few words.
+export const MAX_DESCRIPTION = 2000;
 export const MAX_NOTES = 2000;
 export const MAX_DECLINE_REASON = 500;
 const MAX_QUANTITY = 999_999; // 9,999.99 in hundredths
@@ -25,10 +26,24 @@ export function blankItem() {
   return { key: `new-${nextKey}`, description: "", quantity: "1", unit_price: "" };
 }
 
+// A price book item's name and detail as a line's description. A short detail follows the
+// name on the same line; a long one (scope, exclusions) goes on its own lines under it.
+export function lineDescription(item) {
+  const detail = (item.description || "").trim();
+  if (!detail) return String(item.name).slice(0, MAX_DESCRIPTION);
+  const separator = detail.includes("\n") || detail.length > 80 ? "\n" : " - ";
+  return `${item.name}${separator}${detail}`.slice(0, MAX_DESCRIPTION);
+}
+
+// A line's description as [its first line, everything under it].
+export function splitDescription(text) {
+  const [first, ...rest] = String(text || "").split("\n");
+  return [first, rest.join("\n").trim()];
+}
+
 // A price book item as a new editor line: its name (and detail) and price, quantity 1.
 export function priceBookLine(item) {
-  const description = [item.name, item.description].filter(Boolean).join(" - ").slice(0, MAX_DESCRIPTION);
-  return { ...blankItem(), description, unit_price: item.unit_price };
+  return { ...blankItem(), description: lineDescription(item), unit_price: item.unit_price };
 }
 
 // A line nobody has typed in yet.

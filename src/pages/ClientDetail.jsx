@@ -16,6 +16,7 @@ import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { useAuth } from "../context/useAuth";
 import { useAsync } from "../hooks";
 import { isOwner } from "../utils/roles";
+import { consentSummary } from "../utils/smsConsent";
 
 export default function ClientDetail() {
   const { id } = useParams();
@@ -184,7 +185,10 @@ function ClientDetailView({ id }) {
             </Detail>
             <Detail icon={PhoneIcon} label="Phone">
               {client.phone ? (
-                <a href={`tel:${client.phone}`} className="link">{client.phone}</a>
+                <>
+                  <a href={`tel:${client.phone}`} className="link">{client.phone}</a>
+                  <span className="mt-0.5 block text-xs text-muted">{consentSummary(client)}</span>
+                </>
               ) : (
                 <span className="text-muted">No phone</span>
               )}

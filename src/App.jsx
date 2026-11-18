@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useMatch } from "react-router-dom";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import QuickAddButton from "./components/QuickAddButton";
+import SupportViewBanner from "./components/SupportViewBanner";
 import ClockBanner from "./components/time/ClockBanner";
 import VerifyEmailBanner from "./components/VerifyEmail";
 import Loading from "./components/Loading";
@@ -40,11 +41,21 @@ import { homePath } from "./utils/roles";
 const InvoiceDetail = lazy(() => import("./pages/InvoiceDetail"));
 const InvoicesPage = lazy(() => import("./pages/InvoicesPage"));
 const PriceBookPage = lazy(() => import("./pages/PriceBookPage"));
+const StatsPage = lazy(() => import("./pages/StatsPage"));
+const ImportPage = lazy(() => import("./pages/ImportPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminBusiness = lazy(() => import("./pages/AdminBusiness"));
+// A business's website: the editor (it loads the drag-and-drop library) and the pages visitors see.
+const WebsitePage = lazy(() => import("./pages/WebsitePage"));
+const PublicSitePage = lazy(() => import("./pages/PublicSitePage"));
 const MockCheckoutPage = lazy(() => import("./pages/MockCheckoutPage"));
 const PublicInvoicePage = lazy(() => import("./pages/PublicInvoicePage"));
 const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const LegalPage = lazy(() => import("./pages/landing/LegalPage"));
+const SmsConsentPage = lazy(() => import("./pages/landing/SmsConsentPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 
 // [path, page, who may visit]. See canVisit in utils/roles.js.
 const PRIVATE = [
@@ -69,7 +80,13 @@ const PRIVATE = [
   ["/invoices/:id", InvoiceDetail, "owner"],
   ["/price-book", PriceBookPage, "owner"],
   ["/reports", ReportsPage, "owner"],
+  ["/stats", StatsPage, "owner"],
   ["/settings", SettingsPage, "owner"],
+  // Bring clients and the price book over from Jobber, and download them as CSV files.
+  ["/import", ImportPage, "owner"],
+  // For the people who run Crew Job Tracker: every business that has signed up.
+  ["/admin", AdminPage, "admin"],
+  ["/admin/businesses/:id", AdminBusiness, "admin"],
   ["/my-jobs", MyJobsPage, "employee"],
   ["/my-jobs/:id", MyJobDetail, "employee"],
   ["/calendar", CalendarPage, "employee"],
@@ -103,12 +120,16 @@ export default function App() {
   const publicPay = useMatch("/pay/:token/*");
   const publicInvite = useMatch("/invite/:token");
   const verifyEmail = useMatch("/verify-email");
-  // The marketing pages have their own header and footer.
+  const publicSite = useMatch("/site/:slug/*");
+  const websiteEditor = useMatch("/website/*");
+  // The marketing pages have their own header and footer, and need no login. Terms, Privacy, and
+  // SMS consent are also what carriers read when business texting is registered (A2P 10DLC).
   const landing = useMatch("/");
   const pricing = useMatch("/pricing");
   const terms = useMatch("/terms");
   const privacy = useMatch("/privacy");
-  if (landing || pricing || terms || privacy) {
+  const smsConsent = useMatch("/sms-consent");
+  if (landing || pricing || terms || privacy || smsConsent) {
     return (
       <Suspense fallback={<Loading />}>
         <Routes>
@@ -116,6 +137,31 @@ export default function App() {
           <Route path="/pricing" element={<LandingPage section="pricing" />} />
           <Route path="/terms" element={<LegalPage page="terms" />} />
           <Route path="/privacy" element={<LegalPage page="privacy" />} />
+          <Route path="/sms-consent" element={<SmsConsentPage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+  // A business's website is its own thing: no app menu around it.
+  if (publicSite) {
+    return (
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/site/:slug" element={<PublicSitePage />} />
+          <Route path="/site/:slug/:page" element={<PublicSitePage />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+  // The website editor fills the screen, and so does the owner's preview of their drafts.
+  if (websiteEditor) {
+    return (
+      <Suspense fallback={<Loading />}>
+        <SupportViewBanner />
+        <Routes>
+          <Route path="/website" element={<ProtectedRoute allow="owner"><WebsitePage /></ProtectedRoute>} />
+          <Route path="/website/preview" element={<ProtectedRoute allow="owner"><PublicSitePage preview /></ProtectedRoute>} />
+          <Route path="/website/preview/:page" element={<ProtectedRoute allow="owner"><PublicSitePage preview /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     );
@@ -143,6 +189,7 @@ export default function App() {
       >
         Skip to content
       </a>
+      <SupportViewBanner />
       <NavBar />
       <ClockBanner />
       <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-8">
@@ -153,6 +200,8 @@ export default function App() {
             <Route path="/start" element={<Home />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             {PRIVATE.map(([path, Page, allow]) => (
               <Route
                 key={path}

@@ -1,3 +1,4 @@
+import DayDriveTimes from "../components/DayDriveTimes";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
@@ -8,6 +9,7 @@ import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { useAuth } from "../context/useAuth";
 import { usePaged } from "../hooks";
 import { prettyTimeZone } from "../utils/format";
+import { businessToday } from "../utils/time";
 
 // The employee home page: jobs assigned to this employee, soonest first, then past jobs.
 export default function MyJobsPage() {
@@ -35,6 +37,7 @@ export default function MyJobsPage() {
           </>
         }
       />
+      <DayDriveTimes date={businessToday(user.timezone)} title="Today's drives" />
       <JobSection title="Upcoming" when="upcoming" empty="No upcoming jobs assigned to you." />
       <JobSection title="Past" when="past" empty="No past jobs yet." />
     </div>

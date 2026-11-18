@@ -5,16 +5,18 @@ import BusinessHealthCard from "../components/BusinessHealthCard";
 import ErrorMessage from "../components/ErrorMessage";
 import JobList from "../components/JobList";
 import Loading from "../components/Loading";
+import TextingAlert from "../components/TextingAlert";
 import TeamSchedule from "../components/calendar/TeamSchedule";
 import { ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { CountUp, TiltCard } from "../components/ui/Motion";
 import { EmptyState } from "../components/ui/Feedback";
 import { CalendarIcon, CheckIcon, DollarIcon, PlusIcon } from "../components/ui/Icons";
 import { Badge } from "../components/ui/Badge";
 import { PageHeader, SectionHeader } from "../components/ui/PageHeader";
 import { cx } from "../components/ui/styles";
 import { useAuth } from "../context/useAuth";
-import { useAsync } from "../hooks";
+import { useAsync, useTextingSummary } from "../hooks";
 import { daysBetween, formatDay, formatMoney, isOwed, overdueLabel, sumCents } from "../utils/format";
 
 // [totals key (whole cents), label, icon, icon colors, note(data)]
@@ -87,6 +89,8 @@ function applyJobChange(current, id, patch, fallback) {
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data, setData, error } = useAsync(api, "/api/dashboard");
+  // Asked for alongside the dashboard, so the alert does not push the page down later.
+  const texting = useTextingSummary();
   // Bumped after a change in the unpaid list so the calendar shows it too.
   const [scheduleKey, setScheduleKey] = useState(0);
 
@@ -149,20 +153,21 @@ export default function DashboardPage() {
           </>
         }
       />
+      <TextingAlert summary={texting} />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {TOTAL_CARDS.map(([key, label, Icon, iconClass, note]) => (
-          <div key={key} className="rounded-xl border border-border bg-surface p-4 shadow-card">
+          <TiltCard key={key} max={9} className="glass rounded-2xl border border-border p-4 shadow-card">
             <div className="flex items-start justify-between gap-2">
               <p className="text-xs font-medium text-muted sm:text-sm">{label}</p>
-              <span className={cx("hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:flex", iconClass)}>
+              <span className={cx("hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:flex", iconClass)}>
                 <Icon />
               </span>
             </div>
-            <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
-              {formatMoney(data.totals[key])}
+            <p className="mt-1 font-display text-xl font-bold tabular-nums tracking-tight sm:text-3xl">
+              <CountUp value={data.totals[key]} format={formatMoney} />
             </p>
             <p className="mt-0.5 text-xs text-muted">{note(data)}</p>
-          </div>
+          </TiltCard>
         ))}
       </div>
       <ErrorMessage error={actionError} />

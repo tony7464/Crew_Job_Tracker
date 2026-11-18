@@ -134,7 +134,8 @@ function SentNote({ result }) {
   }
   return (
     <Alert tone="info">
-      The customer wasn't sent the link. Show them the quote on your phone, or copy the link and send it yourself.
+      The customer wasn't sent the link{result.sms === "skipped_no_consent" ? " (they have not agreed to job texts)" : ""}. Show them the
+      quote on your phone, or copy the link and send it yourself.
     </Alert>
   );
 }

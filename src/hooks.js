@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { api } from "./api";
+import { useAuth } from "./context/useAuth";
+import { isOwner } from "./utils/roles";
+import { PICKER_SIZE, clientSearchPath } from "./utils/clientSearch";
+import { stripeLiveFrom } from "./utils/invoices";
 
 // `load` must be a stable function (api or fetchAll), not an inline arrow.
 // Change reloadKey to fetch the same path again.
@@ -42,6 +46,8 @@ export function usePaged(path, query = "") {
           setPage(page - 1);
           return;
         }
+        // A load that worked clears the error of an earlier one (a dropped connection, say).
+        setError(null);
         setResult(data);
       })
       .catch((err) => {
@@ -62,6 +68,73 @@ export function usePaged(path, query = "") {
   }
 
   return { page, setPage, result, setResult, error, reload, reset };
+}
+
+// Wait this long after the last change before searching clients.
+const CLIENT_SEARCH_DELAY = 300;
+
+// Active clients matching query (GET /api/clients?q=, see utils/clientSearch.js), searched a
+// moment after typing stops. "" searches nothing. What comes back is for this query only:
+// while a newer one waits or loads, items is empty and loading is true, so a slow answer to
+// an earlier query never shows. error: this search failed (items is then empty); retry()
+// searches the same words again.
+export function useClientSearch(query, { perPage = PICKER_SIZE } = {}) {
+  const path = clientSearchPath(query, perPage);
+  const [attempt, setAttempt] = useState(0);
+  const [answer, setAnswer] = useState({ key: "", items: [], total: 0, error: null });
+  const key = path ? `${attempt} ${path}` : "";
+
+  useEffect(() => {
+    if (!path) return undefined;
+    const searched = `${attempt} ${path}`;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      api(path)
+        .then((page) => {
+          if (!cancelled) setAnswer({ key: searched, items: page.items, total: page.total, error: null });
+        })
+        .catch((error) => {
+          if (!cancelled) setAnswer({ key: searched, items: [], total: 0, error });
+        });
+    }, CLIENT_SEARCH_DELAY);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [path, attempt]);
+
+  const current = Boolean(key) && answer.key === key;
+  return {
+    items: current ? answer.items : [],
+    total: current ? answer.total : 0,
+    error: current ? answer.error : null,
+    loading: Boolean(key) && !current,
+    retry: () => setAttempt((count) => count + 1),
+  };
+}
+
+// Whether the business has any active clients, for a form that needs one: null until known.
+// One client is asked for, not the whole list. A failed check counts as yes, so the form
+// still shows and its client search says what went wrong. enabled false: true, nothing asked.
+export function useHasClients(enabled = true) {
+  const [has, setHas] = useState(null);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    api("/api/clients?per_page=1")
+      .then((page) => {
+        if (!cancelled) setHas(page.total > 0);
+      })
+      .catch(() => {
+        if (!cancelled) setHas(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return enabled ? has : true;
 }
 
 export function useSubmit(onSubmit, resetOnSuccess) {
@@ -304,4 +377,29 @@ export function useUnreadRequests(enabled, pathname) {
   }, [enabled, pathname, tick]);
 
   return enabled ? count : 0;
+}
+
+// Stable, for useAsync when nothing is to be fetched.
+function nothing() {
+  return Promise.resolve(null);
+}
+
+// GET /api/business/texting: how the business's texts to customers are doing (TextingAlert).
+// Owners only: for anyone else, and with enabled false, it is null and nothing is asked, as
+// the server would refuse it.
+export function useTextingSummary(enabled = true) {
+  const { user } = useAuth();
+  const ask = enabled && isOwner(user);
+  const { data } = useAsync(ask ? api : nothing, ask ? "/api/business/texting" : "");
+  return ask ? data : null;
+}
+
+// The server's Stripe mode, from GET /api/business/stripe, the answer Settings shows
+// (SettingsPaymentsCard), read as Settings reads it (stripeLiveFrom in utils/invoices.js):
+// true when it takes real payments, false in test or mock mode, and null until it answers,
+// when it cannot, or while Stripe is not configured. With enabled false it is null and
+// nothing is asked, so a page only asks when a link needs it (needsServerMode).
+export function useStripeLive(enabled = true) {
+  const { data } = useAsync(enabled ? api : nothing, enabled ? "/api/business/stripe" : "");
+  return enabled ? stripeLiveFrom(data) : null;
 }

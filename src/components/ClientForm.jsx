@@ -1,29 +1,74 @@
+import { useRef, useState } from "react";
+import { useAuth } from "../context/useAuth";
 import { useSubmit } from "../hooks";
+import { afterSave, consentField, consentSummary, formConsent, nextClick } from "../utils/smsConsent";
 import ErrorMessage from "./ErrorMessage";
-import { Checkbox, FormActions, Input, TextArea } from "./Field";
+import { FormActions, Input, TextArea } from "./Field";
+import SmsConsentCheckbox from "./SmsConsentCheckbox";
 import { Button } from "./ui/Button";
 
+// Adding or editing a client. The box for consent to job texts sits right under the phone
+// number: the business reads the words to the customer and ticks it only if they agree, and
+// unticks it to take consent back. Texts go only to clients with it; email is not affected.
+//
+// Consent is for one number, so a new number starts unticked, and a click on the box counts
+// only for the number it was made for. When editing, the box is sent only when it differs
+// from how it started (utils/smsConsent.js formConsent). Once a save works, the box starts
+// again from what was saved.
 export default function ClientForm({ initial, onSubmit, submitLabel, onCancel }) {
-  const { error, submitting, handleSubmit } = useSubmit(onSubmit, !initial);
+  const { user } = useAuth();
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  // null until the box is clicked: then the business's choice, and the number it was for.
+  const [ticked, setTicked] = useState(null);
+  const box = formConsent({ initial, phone, ticked });
+  // The clicks on the box that the save in progress was sent with.
+  const saving = useRef(null);
+  const { error, submitting, handleSubmit } = useSubmit(async (body) => {
+    const sent = saving.current;
+    await onSubmit(body);
+    // Saved: the box starts from what was saved. A click made while it saved is kept.
+    setTicked((last) => afterSave(last, sent));
+  }, !initial);
 
   function onSubmitForm(event) {
+    saving.current = ticked;
     const form = new FormData(event.target);
-    handleSubmit(event, {
+    const body = {
       name: form.get("name"),
       address: form.get("address") || null,
       phone: form.get("phone") || null,
       email: form.get("email") || null,
       notes: form.get("notes") || null,
-      sms_opt_out: form.get("sms_opt_out") === "on",
-    });
+      ...consentField(box),
+    };
+    // Adding closes the form when it works, so nothing here needs clearing.
+    handleSubmit(event, body);
   }
+
+  const consentHint = [
+    initial && !box.newNumber && consentSummary(initial),
+    box.newNumber && box.agreedBefore && !box.clicked && "Their consent was for the old number.",
+    box.tickedForOther && `It was ticked for ${box.tickedForOther}: tick it again if they agreed for this number.`,
+    "Optional. Read it to the customer, and tick it only if they agree.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <form onSubmit={onSubmitForm} className="space-y-4">
       <Input label="Name" name="name" defaultValue={initial?.name} required />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Input label="Address" name="address" defaultValue={initial?.address ?? ""} autoComplete="off" />
-        <Input label="Phone" name="phone" type="tel" defaultValue={initial?.phone ?? ""} autoComplete="off" />
+      <Input label="Address" name="address" defaultValue={initial?.address ?? ""} autoComplete="off" />
+      <div className="space-y-3">
+        <Input label="Phone" name="phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} autoComplete="off" />
+        <SmsConsentCheckbox
+          businessName={user?.business_name}
+          checked={box.checked}
+          onChange={(event) => {
+            const click = { checked: event.target.checked, phone, shown: box.checked };
+            setTicked((last) => nextClick(last, click));
+          }}
+          hint={consentHint}
+        />
       </div>
       <Input label="Email" name="email" type="email" defaultValue={initial?.email ?? ""} autoComplete="off" />
       <TextArea
@@ -32,12 +77,6 @@ export default function ClientForm({ initial, onSubmit, submitLabel, onCancel })
         defaultValue={initial?.notes ?? ""}
         rows="3"
         hint="Gate codes, pets, parking. Crew members with client access can see these."
-      />
-      <Checkbox
-        name="sms_opt_out"
-        defaultChecked={Boolean(initial?.sms_opt_out)}
-        label="Do not text"
-        description="They asked not to get texts. Visit confirmations, reminders, and quote links go by email instead."
       />
       <ErrorMessage error={error} />
       <FormActions>

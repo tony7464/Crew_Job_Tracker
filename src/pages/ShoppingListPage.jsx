@@ -4,6 +4,7 @@ import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
+import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/Feedback";
@@ -28,7 +29,7 @@ function listText(body) {
     const { job } = group;
     lines.push("", `${job.client_name}: ${job.service_type}, ${formatDay(job.date)} ${formatTime(job.time)}`);
     for (const item of group.items) {
-      const extra = [item.quantity, item.note].filter(Boolean).join(", ");
+      const extra = [item.quantity, item.note, item.kind === "tool" && "tool"].filter(Boolean).join(", ");
       lines.push(`- ${item.name}${extra ? ` (${extra})` : ""}`);
     }
   }
@@ -113,7 +114,7 @@ export default function ShoppingListPage() {
         <EmptyState
           icon={CartIcon}
           title="Nothing to pick up"
-          description="Add materials on a job and they'll show up here until someone ticks them off."
+          description="Add materials and tools on a job and they'll show up here until someone ticks them off."
         />
       )}
       {data?.jobs.map(({ job, items }) => (
@@ -152,6 +153,7 @@ export default function ShoppingListPage() {
                       <span className={cx("block text-sm", done && "text-muted line-through")}>
                         {item.name}
                         {item.quantity && <span className="ml-2 font-medium text-muted">{item.quantity}</span>}
+                        {item.kind === "tool" && <Badge className="ml-2 align-middle">Tool</Badge>}
                       </span>
                       {item.note && <span className="block text-xs text-muted">{item.note}</span>}
                     </span>

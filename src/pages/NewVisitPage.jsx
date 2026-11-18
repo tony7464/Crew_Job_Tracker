@@ -5,6 +5,8 @@ import ErrorMessage from "../components/ErrorMessage";
 import { Checkbox, Input, Select, TextArea } from "../components/Field";
 import Loading from "../components/Loading";
 import MapLink from "../components/MapLink";
+import SmsConsentCheckbox from "../components/SmsConsentCheckbox";
+import TextingAlert from "../components/TextingAlert";
 import { Avatar } from "../components/ui/Avatar";
 import { Badge } from "../components/ui/Badge";
 import { Button, ButtonLink } from "../components/ui/Button";
@@ -14,14 +16,18 @@ import { AlertIcon, CalendarIcon, CheckIcon, CopyIcon, MapPinIcon, UsersIcon } f
 import { PageHeader } from "../components/ui/PageHeader";
 import { cx } from "../components/ui/styles";
 import { useAuth } from "../context/useAuth";
-import { useAsync } from "../hooks";
+import { useAsync, useClientSearch, useTextingSummary } from "../hooks";
 import { DURATION_PRESETS, formatDay, formatDuration, formatTimeRange, prettyTimeZone } from "../utils/format";
 import { emailLooksValid, fieldErrors, phoneLooksValid } from "../utils/requests";
 import { isOwner } from "../utils/roles";
+import { bookingContact, bookingNotify } from "../utils/booking";
+import { mayText } from "../utils/smsConsent";
+import { textingAlert } from "../utils/texting";
 import { addDays, businessToday } from "../utils/time";
 import { overlaps } from "../utils/visits";
 
-const EMPTY_CUSTOMER = { name: "", phone: "", address: "", email: "", notes: "" };
+// sms_consent: the box for consent to job texts, under the phone number. Unticked to start.
+const EMPTY_CUSTOMER = { name: "", phone: "", sms_consent: false, address: "", email: "", notes: "" };
 const WINDOW_STARTS = { morning: "09:00", afternoon: "13:00", evening: "17:00" };
 const STEPS = [
   ["customer", "Customer"],
@@ -144,13 +150,16 @@ export default function NewVisitPage() {
       duration_minutes: Number(visit.duration_minutes),
       employee_ids: visit.crew,
       notes: visit.notes.trim() || null,
-      notify,
+      // Never ask for a text the screen says will not go.
+      notify: bookingNotify(notify, who),
     };
     if (visit.service_type.trim()) body.service_type = visit.service_type.trim();
     if (chosen) body.client_id = chosen.id;
     else if (serviceRequest) body.request_id = serviceRequest.id;
     else {
-      body.client = Object.fromEntries(Object.entries(customer).map(([key, value]) => [key, value.trim() || null]));
+      body.client = Object.fromEntries(
+        Object.entries(customer).map(([key, value]) => [key, typeof value === "string" ? value.trim() || null : value]),
+      );
       if (allowDuplicate) body.allow_duplicate = true;
     }
     try {
@@ -175,6 +184,11 @@ export default function NewVisitPage() {
       setSubmitting(false);
     }
   }
+
+  // Who is being booked (utils/booking.js): a request linked to a client books that client.
+  const who = bookingContact({ chosen, serviceRequest, customer });
+  // The box on the customer step is for a new client: picking one they already have leaves it out.
+  const consentLeftOut = Boolean(chosen && customer.sms_consent);
 
   function startOver() {
     setChosen(null);
@@ -201,6 +215,7 @@ export default function NewVisitPage() {
       {step === "loading" && <Loading label="Loading…" />}
       {step === "customer" && (
         <CustomerStep
+          businessName={user.business_name}
           customer={customer}
           setCustomer={setCustomer}
           errors={errors}
@@ -216,7 +231,8 @@ export default function NewVisitPage() {
         <VisitStep
           user={user}
           today={today}
-          who={chosen ? { ...chosen, existing: true } : serviceRequest ? { ...serviceRequest, request: true } : customer}
+          who={who}
+          consentLeftOut={consentLeftOut}
           visit={visit}
           setVisit={setVisit}
           notify={notify}
@@ -236,8 +252,8 @@ export default function NewVisitPage() {
         <DoneStep
           user={user}
           result={result}
-          phone={(chosen || serviceRequest || customer).phone}
-          email={(chosen || serviceRequest || customer).email}
+          phone={who.phone}
+          email={who.email}
           onAnother={startOver}
         />
       )}
@@ -277,26 +293,8 @@ function useSuggestions(customer) {
   const name = customer.name.trim();
   const digits = digitsOf(customer.phone);
   const query = digits.length >= 4 ? digits : name.length >= 2 ? name : "";
-  const [state, setState] = useState({ query: "", items: [] });
-
-  useEffect(() => {
-    if (!query) return undefined;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const page = await api(`/api/clients?q=${encodeURIComponent(query)}&per_page=5`);
-        if (!cancelled) setState({ query, items: page.items });
-      } catch {
-        // Suggestions are a convenience: the form works without them.
-      }
-    }, 300);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [query]);
-
-  return query && state.query === query ? state.items : [];
+  // Suggestions are a convenience: the form works without them, so a failed search shows none.
+  return useClientSearch(query, { perPage: 5 }).items;
 }
 
 function ClientChoice({ client, onUse, busy, label = "Use this client" }) {
@@ -321,7 +319,15 @@ function ClientChoice({ client, onUse, busy, label = "Use this client" }) {
   );
 }
 
-function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUseClient, onAddAnyway, onNext, canSkipVisit }) {
+function ConsentForNewClientsOnly({ className }) {
+  return (
+    <p className={`text-xs ${className}`}>
+      The box for texts is for a new client. For a client you already have, record their consent on their client page.
+    </p>
+  );
+}
+
+function CustomerStep({ businessName, customer, setCustomer, errors, matches, submitting, onUseClient, onAddAnyway, onNext, canSkipVisit }) {
   const suggestions = useSuggestions(customer);
   const set = (key) => (event) => setCustomer((current) => ({ ...current, [key]: event.target.value }));
 
@@ -335,6 +341,7 @@ function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUs
               <ClientChoice key={client.id} client={client} onUse={onUseClient} busy={submitting} label="Book for them" />
             ))}
           </ul>
+          {customer.sms_consent && <ConsentForNewClientsOnly className="mt-3" />}
           <Button className="mt-3" variant="ghost" size="sm" disabled={submitting} onClick={onAddAnyway}>
             No, add {customer.name.trim() || "them"} as a new client
           </Button>
@@ -361,6 +368,12 @@ function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUs
             placeholder="(512) 555-0101"
             maxLength={40}
           />
+          <SmsConsentCheckbox
+            businessName={businessName}
+            checked={customer.sms_consent}
+            onChange={(event) => setCustomer((current) => ({ ...current, sms_consent: event.target.checked }))}
+            hint="Optional. Read it to the customer, and tick it only if they agree."
+          />
           {suggestions.length > 0 && !matches && (
             <div className="rounded-lg bg-surface-2 p-3">
               <p className="mb-2 text-sm font-medium text-fg">Already a client?</p>
@@ -369,6 +382,7 @@ function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUs
                   <ClientChoice key={client.id} client={client} onUse={onUseClient} />
                 ))}
               </ul>
+              {customer.sms_consent && <ConsentForNewClientsOnly className="mt-2 text-muted" />}
             </div>
           )}
           <Input
@@ -415,7 +429,7 @@ function CustomerStep({ customer, setCustomer, errors, matches, submitting, onUs
   );
 }
 
-function VisitStep({ user, today, who, visit, setVisit, notify, setNotify, errors, submitting, submitError, onBack, onBook }) {
+function VisitStep({ user, today, who, consentLeftOut, visit, setVisit, notify, setNotify, errors, submitting, submitError, onBack, onBook }) {
   const { data, error } = useAsync(api, `/api/schedule/team?start=${visit.date}&end=${visit.date}`);
   const set = (key) => (event) => setVisit((current) => ({ ...current, [key]: event.target.value }));
   const employees = (data?.employees || []).filter((person) => person.is_active);
@@ -546,9 +560,21 @@ function VisitStep({ user, today, who, visit, setVisit, notify, setNotify, error
         <div className="space-y-3">
           <Checkbox
             label={who.phone ? `Text ${who.phone}` : "Text them"}
-            description={who.phone ? "Plus a reminder the day before, if that's on in Settings." : "No phone number for them."}
-            checked={Boolean(who.phone) && notify.sms}
-            disabled={!who.phone}
+            description={
+              !who.phone
+                ? "No phone number for them."
+                : who.cannot_text
+                  ? "This number cannot get texts."
+                  : who.sms_opt_out
+                  ? "They are marked not to be texted."
+                  : !who.sms_consent
+                    ? consentLeftOut
+                      ? "They have not agreed to job texts on their client page, so they are not texted. The box you ticked was for a new client: record their consent on their client page."
+                      : "They have not agreed to job texts, so they are not texted."
+                    : "Plus a reminder the day before, if that's on in Settings."
+            }
+            checked={mayText(who) && notify.sms}
+            disabled={!mayText(who)}
             onChange={(event) => setNotify((current) => ({ ...current, sms: event.target.checked }))}
           />
           <Checkbox
@@ -586,17 +612,24 @@ function VisitStep({ user, today, who, visit, setVisit, notify, setNotify, error
 // What happened to the confirmation text and email, in plain words.
 function MessageResults({ result, phone, email }) {
   const { messages, delivery, message_preview: preview } = result;
+  // Twilio took the text, but carriers may be blocking texts right now (owners are told).
+  const handed = messages?.sms === "queued" && delivery?.sms === "twilio";
+  const texting = useTextingSummary(handed);
   if (!messages) return null;
   const lines = [];
   const textLink = phone && preview ? `sms:${phone}?&body=${encodeURIComponent(preview)}` : null;
   if (messages.sms === "queued") {
     lines.push(
-      delivery.sms === "twilio"
-        ? ["success", `Texted the details to ${phone}.`]
-        : ["warning", "Texting isn't set up yet, so no text went out.", textLink],
+      delivery.sms !== "twilio"
+        ? ["warning", "Texting isn't set up yet, so no text went out.", textLink]
+        : textingAlert(texting)
+          ? ["warning", `The text to ${phone} went to Twilio, but texts are not arriving right now (see below).`, textLink]
+          : ["success", `Texted the details to ${phone}.`],
     );
   } else if (messages.sms === "skipped_opted_out") {
-    lines.push(["info", "Not texted: they asked not to get texts."]);
+    lines.push(["info", "Not texted: they are marked not to be texted."]);
+  } else if (messages.sms === "skipped_no_consent") {
+    lines.push(["info", "Not texted: they have not agreed to job texts."]);
   } else if (messages.sms === "limit") {
     lines.push(["warning", "Not texted: today's text limit for your business is used up.", textLink]);
   }
@@ -625,6 +658,7 @@ function MessageResults({ result, phone, email }) {
           )}
         </Alert>
       ))}
+      {handed && <TextingAlert summary={texting} />}
     </div>
   );
 }

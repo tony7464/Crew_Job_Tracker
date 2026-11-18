@@ -3,19 +3,23 @@ import { Link } from "react-router-dom";
 import { api } from "../../api";
 import { useAuth } from "../../context/useAuth";
 import { formatMoney } from "../../utils/format";
+import { PRICE_BOOK_KINDS, filterPriceBook, kindLabel, kindsIn } from "../../utils/priceBook";
 import { priceBookLine } from "../../utils/quotes";
 import { isOwner } from "../../utils/roles";
 import { Button } from "../ui/Button";
 import { Spinner } from "../ui/Feedback";
 import { PlusIcon, SearchIcon } from "../ui/Icons";
+import { cx } from "../ui/styles";
 
-// "From price book" beside Add item: search saved services and add each as a line.
+// "From price book" beside Add item: search saved services, materials, and hourly rates,
+// and add each as a line.
 export default function PriceBookPicker({ onPick, disabled }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState(null);
   const [error, setError] = useState(null);
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
   const [added, setAdded] = useState(0);
 
   useEffect(() => {
@@ -29,13 +33,9 @@ export default function PriceBookPicker({ onPick, disabled }) {
     };
   }, [open, items]);
 
-  const shown = useMemo(() => {
-    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return (items || []).filter((item) => {
-      const text = [item.name, item.description, item.category].filter(Boolean).join(" ").toLowerCase();
-      return words.every((word) => text.includes(word));
-    });
-  }, [items, query]);
+  const shown = useMemo(() => filterPriceBook(items, { query, kind }), [items, query, kind]);
+  // The type buttons only show when the price book mixes types.
+  const kinds = useMemo(() => kindsIn(items), [items]);
 
   if (!open) {
     return (
@@ -46,7 +46,9 @@ export default function PriceBookPicker({ onPick, disabled }) {
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-border bg-surface-2/40 p-3">
+    // w-full min-w-0: in the wrapping row of buttons this takes the whole row and no more,
+    // however long an item's description is.
+    <div className="mt-3 w-full min-w-0 rounded-xl border border-border bg-surface-2/40 p-3">
       <div className="flex items-center gap-2">
         <label className="relative block flex-1">
           <span className="sr-only">Search the price book</span>
@@ -55,7 +57,7 @@ export default function PriceBookPicker({ onPick, disabled }) {
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search services"
+            placeholder="Search the price book"
             className="field pl-9"
           />
         </label>
@@ -63,6 +65,24 @@ export default function PriceBookPicker({ onPick, disabled }) {
           Done
         </Button>
       </div>
+      {kinds.length > 1 && (
+        <div role="group" aria-label="Show" className="mt-2 flex flex-wrap gap-1.5">
+          {[["all", "All", "All"], ...PRICE_BOOK_KINDS.filter(([value]) => kinds.includes(value))].map(([value, , label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={kind === value}
+              onClick={() => setKind(value)}
+              className={cx(
+                "rounded-full border px-2.5 py-1 text-xs font-medium",
+                kind === value ? "border-primary bg-primary text-primary-fg" : "border-border text-muted hover:text-fg",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {added > 0 && (
         <p className="mt-2 text-xs text-muted" role="status">
           Added {added} {added === 1 ? "line" : "lines"}. Change the quantity in the list above.
@@ -80,10 +100,10 @@ export default function PriceBookPicker({ onPick, disabled }) {
             Your price book is empty.{" "}
             {isOwner(user) ? (
               <Link to="/price-book" className="link">
-                Add your services
+                Add what you charge for
               </Link>
             ) : (
-              "Ask the owner to add services."
+              "Ask the owner to add items."
             )}
           </p>
         )}
@@ -102,9 +122,9 @@ export default function PriceBookPicker({ onPick, disabled }) {
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-fg">{item.name}</span>
-                  {(item.category || item.description) && (
+                  {(kinds.length > 1 || item.category || item.description) && (
                     <span className="block truncate text-xs text-muted">
-                      {[item.category, item.description].filter(Boolean).join(" · ")}
+                      {[kinds.length > 1 && kindLabel(item.kind), item.category, item.description].filter(Boolean).join(" · ")}
                     </span>
                   )}
                 </span>

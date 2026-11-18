@@ -35,14 +35,25 @@ export function canQuote(user) {
   return isOwner(user) || Boolean(isEmployee(user) && user.can_quote);
 }
 
+// The people who run Crew Job Tracker itself: they can open the admin pages (/admin).
+export function isPlatformAdmin(user) {
+  return Boolean(user?.platform_admin);
+}
+
+// An admin looking at a business as its owner does, read-only (user.support_view: { until }).
+export function inSupportView(user) {
+  return Boolean(user?.support_view);
+}
+
 export function homePath(user) {
   if (!user) return "/login";
   return isOwner(user) ? "/dashboard" : "/my-jobs";
 }
 
-// allow: "owner", "employee", "clients", "team", "requests", or undefined for any logged-in user.
+// allow: "owner", "employee", "clients", "team", "requests", "admin", or undefined for any logged-in user.
 export function canVisit(user, allow) {
   if (!allow) return Boolean(user);
+  if (allow === "admin") return isPlatformAdmin(user);
   if (allow === "owner") return isOwner(user);
   if (allow === "employee") return isEmployee(user);
   if (allow === "clients") return hasClientAccess(user);

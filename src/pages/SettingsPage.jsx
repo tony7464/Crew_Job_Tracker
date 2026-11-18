@@ -16,6 +16,8 @@ import { useAuth } from "../context/useAuth";
 import { useAsync } from "../hooks";
 import SettingsPaymentsCard from "./SettingsPaymentsCard";
 import SettingsQuickBooksCard from "./SettingsQuickBooksCard";
+import SettingsSupportCard from "./SettingsSupportCard";
+import SettingsTaxCard from "./SettingsTaxCard";
 import SettingsChecklistsCard from "./SettingsChecklistsCard";
 import SettingsMessagesCard from "./SettingsMessagesCard";
 import SettingsRemindersCard from "./SettingsRemindersCard";
@@ -308,14 +310,16 @@ function RequestFormCard() {
 export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader title="Settings" description="Your business's request form, job checklists, customer messages, reminders, and payments." />
+      <PageHeader title="Settings" description="Your business's request form, job checklists, customer messages, reminders, sales tax, payments, and support access." />
       <div className="space-y-6">
         <RequestFormCard />
         <SettingsChecklistsCard />
         <SettingsMessagesCard />
         <SettingsRemindersCard />
+        <SettingsTaxCard />
         <SettingsPaymentsCard />
         <SettingsQuickBooksCard />
+        <SettingsSupportCard />
       </div>
     </div>
   );

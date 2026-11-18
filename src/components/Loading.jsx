@@ -4,7 +4,7 @@ import { Skeleton, Spinner } from "./ui/Feedback";
 export default function Loading({ variant = "page", label = "Loading…" }) {
   if (variant === "list") {
     return (
-      <div role="status" className="space-y-3 rounded-xl border border-border bg-surface p-4 shadow-card">
+      <div role="status" className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-card">
         <span className="sr-only">{label}</span>
         {[0, 1, 2].map((row) => (
           <div key={row} className="flex items-center gap-3">

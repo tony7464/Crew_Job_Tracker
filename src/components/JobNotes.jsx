@@ -35,7 +35,11 @@ export default function JobNotes({ jobId, reloadKey = 0, photosEnabled = true, o
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [open, setOpen] = useState(null);
-  const uploads = usePhotoUploads(`/api/jobs/${jobId}/photos`, { onUploaded: () => onPhotosChanged?.() });
+  const uploads = usePhotoUploads(`/api/jobs/${jobId}/photos`, {
+    onUploaded: () => onPhotosChanged?.(),
+    // Straight to storage where the server offers it, otherwise through the API.
+    mode: "auto",
+  });
 
   const saved = uploads.items.filter((item) => item.status === "done");
   const room = MAX_NOTE_PHOTOS - uploads.items.length;

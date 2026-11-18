@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, fetchAll } from "../api";
+import { api } from "../api";
 import ConfirmDelete from "../components/ConfirmDelete";
 import CreateInvoiceButton from "../components/CreateInvoiceButton";
 import ErrorMessage from "../components/ErrorMessage";
@@ -24,6 +24,7 @@ import { CalendarIcon, ClockIcon, DollarIcon, PhoneIcon } from "../components/ui
 import MapLink from "../components/MapLink";
 import { PageHeader } from "../components/ui/PageHeader";
 import { useAsync } from "../hooks";
+import { deleteJobCopy } from "../utils/deleteJob";
 import { DEFAULT_DURATION, formatDay, formatDuration, formatTimeRange } from "../utils/format";
 import { isEstimate } from "../utils/visits";
 
@@ -99,11 +100,9 @@ function JobDetailView({ id }) {
       if (stopped && err.status === 404) navigate("/jobs");
     }
   }
-  const clientsState = useAsync(fetchAll, "/api/clients");
   const employeesState = useAsync(api, "/api/employees");
-  const error = jobState.error || clientsState.error || employeesState.error;
+  const error = jobState.error || employeesState.error;
   const job = jobState.data;
-  const clients = clientsState.data;
   const employees = employeesState.data;
   // Each card refreshes the other when it changes photos.
   const [photosKey, setPhotosKey] = useState(0);
@@ -124,7 +123,7 @@ function JobDetailView({ id }) {
     );
   }
   if (error) return <ErrorMessage error={error} />;
-  if (!job || !clients || !employees) return <Loading />;
+  if (!job || !employees) return <Loading />;
   const crewKey = job.assignees.map((person) => person.id).join(",");
   const minutes = job.duration_minutes ?? DEFAULT_DURATION;
   const estimate = isEstimate(job);
@@ -208,7 +207,6 @@ function JobDetailView({ id }) {
           <Card title="Edit job" className="lg:col-span-3">
             <JobForm
               key={`${job.id}-${job.status}-${job.paid}-${job.invoice?.status}-${job.date}-${job.time}-${minutes}-${crewKey}`}
-              clients={clients}
               employees={employees}
               initial={job}
               onSubmit={save}
@@ -239,12 +237,7 @@ function JobDetailView({ id }) {
         </div>
       )}
       <ConfirmDelete
-        label={estimate ? "Delete visit" : "Delete job"}
-        description={
-          estimate
-            ? "Removes this visit, its notes log, photos, and materials. Its quote stays as a draft. This cannot be undone."
-            : "Removes this job, its notes log, and its photos. This cannot be undone."
-        }
+        {...deleteJobCopy(job)}
         onConfirm={async () => {
           await api(`/api/jobs/${id}`, { method: "DELETE" });
           navigate("/jobs");

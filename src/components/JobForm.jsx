@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useSubmit } from "../hooks";
+import { useHasClients, useSubmit } from "../hooks";
+import { startingClient } from "../utils/clientSearch";
 import { REPEAT_OPTIONS, parseRepeat } from "../utils/series";
 import {
   DEFAULT_DURATION,
@@ -10,6 +11,7 @@ import {
   STATUSES,
   statusLabel,
 } from "../utils/format";
+import ClientSearchPicker from "./ClientSearchPicker";
 import ErrorMessage from "./ErrorMessage";
 import { Checkbox, FormActions, Input, Select, TextArea } from "./Field";
 import { Avatar } from "./ui/Avatar";
@@ -22,31 +24,27 @@ function assignableEmployees(employees, initial) {
   return employees.filter((employee) => employee.is_active || assignedIds.has(employee.id));
 }
 
-// Archived clients are not in the picker. A job already on one keeps its client
-// listed (and labelled) so it can be edited; new jobs cannot pick it.
-function pickableClients(clients, initial) {
-  const listed = clients.some((client) => String(client.id) === String(initial?.client_id));
-  if (!initial?.id || listed || !initial.client_name) return clients.map((client) => [client.id, client.name]);
-  return [
-    ...clients.map((client) => [client.id, client.name]),
-    [initial.client_id, `${initial.client_name} (archived)`],
-  ];
-}
-
 function durationOptions(current) {
   return DURATION_PRESETS.includes(current) ? DURATION_PRESETS : [...DURATION_PRESETS, current].sort((a, b) => a - b);
 }
 
 // employees: the owner's employee list. Leave it out to hide the crew picker.
 // initial: the job being edited, or prefill values (client_id, date, time, duration_minutes).
+// The client is found by searching (ClientSearchPicker), so no client list is passed in.
+// Archived clients are not offered. A job already on one keeps its client (labelled
+// archived) so it can be edited; new jobs cannot pick it.
 // New jobs get a Repeat picker; the body then has repeat: { repeat, every, end_date } or null
 // (see createJob in utils/series.js).
-export default function JobForm({ clients, employees, initial, onSubmit, submitLabel, onCancel }) {
+export default function JobForm({ employees, initial, onSubmit, submitLabel, onCancel }) {
   const { error, submitting, handleSubmit } = useSubmit(onSubmit, !initial);
   const isNew = !initial?.id;
   const [repeat, setRepeat] = useState("");
+  const [clientError, setClientError] = useState(null);
+  const clientField = useRef(null);
+  // A new job needs a client: a business with none yet is told to add one first.
+  const hasClients = useHasClients(isNew);
 
-  if (!clients.length && !initial?.id) {
+  if (hasClients === false) {
     return (
       <p className="text-sm text-muted">
         Add a client before scheduling a job.{" "}
@@ -59,6 +57,13 @@ export default function JobForm({ clients, employees, initial, onSubmit, submitL
 
   function onSubmitForm(event) {
     const form = new FormData(event.target);
+    // client_id is the picker's hidden field: empty until a client is picked from the list.
+    if (!form.get("client_id")) {
+      event.preventDefault();
+      setClientError("Search for a client and pick one from the list.");
+      clientField.current?.focus();
+      return;
+    }
     handleSubmit(event, {
       client_id: Number(form.get("client_id")),
       date: form.get("date"),
@@ -88,12 +93,14 @@ export default function JobForm({ clients, employees, initial, onSubmit, submitL
   return (
     <form onSubmit={onSubmitForm} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Select label="Client" name="client_id" defaultValue={initial?.client_id ?? ""} required>
-          <option value="" disabled>Choose a client</option>
-          {pickableClients(clients, initial).map(([id, name]) => (
-            <option key={id} value={id}>{name}</option>
-          ))}
-        </Select>
+        <ClientSearchPicker
+          ref={clientField}
+          name="client_id"
+          start={startingClient(initial)}
+          keepArchived={!isNew}
+          error={clientError}
+          onChange={() => setClientError(null)}
+        />
         <Input
           label="Service"
           name="service_type"

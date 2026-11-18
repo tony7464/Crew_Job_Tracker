@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useAsync } from "../hooks";
 import { DURATION_PRESETS, formatDuration, inputTime } from "../utils/format";
 import { fieldErrors } from "../utils/requests";
+import { deliveryBadge } from "../utils/texting";
 import ErrorMessage from "./ErrorMessage";
 import { Checkbox, Input, Select, TextArea } from "./Field";
 import { Avatar } from "./ui/Avatar";
@@ -141,7 +142,22 @@ function when(iso) {
 // What the customer was sent about this visit, and (canSend) sending the details again.
 function VisitMessages({ jobId, canSend, reloadKey }) {
   const [resent, setResent] = useState(0);
-  const { data, error } = useAsync(api, `/api/visits/${jobId}/messages`, `${reloadKey}-${resent}`);
+  const [looks, setLooks] = useState(0);
+  const { data, error } = useAsync(api, `/api/visits/${jobId}/messages`, `${reloadKey}-${resent}-${looks}`);
+  // Twilio says what became of a text a moment after it goes: while a text sent from this page
+  // (or one Twilio has not answered for yet) is on its way, look again a few times.
+  const [firstKey] = useState(reloadKey);
+  const sentHere = resent > 0 || reloadKey !== firstKey;
+  const onItsWay = Boolean(
+    data?.messages.some(
+      (message) => message.channel === "sms" && (message.delivery?.state === "sending" || (sentHere && !message.delivery)),
+    ),
+  );
+  useEffect(() => {
+    if (!onItsWay || looks >= 4) return undefined;
+    const timer = setTimeout(() => setLooks((count) => count + 1), 6000);
+    return () => clearTimeout(timer);
+  }, [onItsWay, looks]);
   const [busy, setBusy] = useState(false);
   const [sendError, setSendError] = useState(null);
 
@@ -162,6 +178,14 @@ function VisitMessages({ jobId, canSend, reloadKey }) {
   if (!data) return null;
   const reachable = data.channels.sms === "ok" || data.channels.email === "ok";
   const notSetUp = data.delivery.sms === "log" && data.delivery.email === "log";
+  // Texts that were only logged (texting was off then): by each text, or, for a text from
+  // before statuses were kept, by how texts go now.
+  const textsOnlyLogged =
+    !notSetUp &&
+    data.messages.some(
+      (message) =>
+        message.channel === "sms" && (message.delivery?.state === "logged" || (!message.delivery && data.delivery.sms === "log")),
+    );
 
   return (
     <div className="border-t border-border pt-3">
@@ -175,30 +199,51 @@ function VisitMessages({ jobId, canSend, reloadKey }) {
       </div>
       {data.messages.length === 0 ? (
         <p className="text-sm text-muted">
-          {reachable ? "Nothing yet." : "Nothing: there's no phone number or email for them."}
+          {reachable
+            ? "Nothing yet."
+            : data.channels.sms === "no_phone"
+              ? "Nothing: there's no phone number or email for them."
+              : "Nothing: they can't be texted, and there's no email for them."}
         </p>
       ) : (
         <ul className="space-y-1.5 text-sm">
-          {data.messages.slice(0, 6).map((message) => (
-            <li key={message.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="text-fg">
-                {MESSAGE_LABELS[message.kind] || message.kind}{" "}
-                <span className="text-muted">
-                  · {message.channel === "sms" ? "text to" : "email to"} {message.sent_to}
-                </span>
-              </span>
-              <span className="text-xs text-muted">
-                {message.automatic ? "Automatic · " : ""}
-                {when(message.sent_at)}
-              </span>
-            </li>
-          ))}
+          {data.messages.slice(0, 6).map((message) => {
+            const badge = deliveryBadge(message.delivery);
+            return (
+              <li key={message.id}>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span className="text-fg">
+                    {MESSAGE_LABELS[message.kind] || message.kind}{" "}
+                    <span className="text-muted">
+                      · {message.channel === "sms" ? "text to" : "email to"} {message.sent_to}
+                    </span>{" "}
+                    {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
+                  </span>
+                  <span className="text-xs text-muted">
+                    {message.automatic ? "Automatic · " : ""}
+                    {when(message.sent_at)}
+                  </span>
+                </div>
+                {badge?.reason && (
+                  <p className={cx("mt-0.5 text-xs", badge.tone === "danger" ? "text-danger" : "text-muted")}>{badge.reason}</p>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
       {notSetUp && data.messages.length > 0 && (
         <p className="mt-2 text-xs text-muted">Texting and email aren't set up yet, so these were only logged, not delivered.</p>
       )}
-      {data.channels.sms === "opted_out" && <p className="mt-2 text-xs text-muted">They asked not to get texts.</p>}
+      {textsOnlyLogged && (
+        <p className="mt-2 text-xs text-muted">Some texts here were only logged, not delivered, because texting was not set up.</p>
+      )}
+      {data.channels.sms === "opted_out" && <p className="mt-2 text-xs text-muted">They are marked not to be texted.</p>}
+      {data.channels.sms === "no_consent" && (
+        <p className="mt-2 text-xs text-muted">
+          They have not agreed to job texts, so they are not texted.{data.channels.email === "ok" && " Email still goes."}
+        </p>
+      )}
       <ErrorMessage error={sendError} />
     </div>
   );

@@ -9,6 +9,7 @@ import { Card } from "./ui/Card";
 import { Spinner } from "./ui/Feedback";
 import { AlertIcon, CheckIcon, InfoIcon, RefreshIcon } from "./ui/Icons";
 import { cx } from "./ui/styles";
+import { useCountUp } from "./ui/useMotion";
 
 const STATUS = {
   act: { icon: AlertIcon, className: "text-danger", label: "Needs action" },
@@ -22,6 +23,37 @@ function scoreTone(score) {
   if (score >= 75) return "success";
   if (score >= 50) return "warning";
   return "danger";
+}
+
+const RING_COLOR = { success: "text-success", warning: "text-warning", danger: "text-danger", neutral: "text-muted" };
+const RING_LENGTH = 2 * Math.PI * 20;
+
+// The score as a ring that fills as the number counts up.
+function ScoreRing({ score }) {
+  const shown = useCountUp(score, 1200);
+  return (
+    <span
+      className={cx("relative inline-flex h-14 w-14 shrink-0 items-center justify-center", RING_COLOR[scoreTone(score)])}
+      title="Share of checks that look good"
+      role="img"
+      aria-label={`Score: ${score} out of 100`}
+    >
+      <svg viewBox="0 0 48 48" className="absolute inset-0 -rotate-90" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" strokeWidth="5" className="stroke-surface-2" />
+        <circle
+          cx="24"
+          cy="24"
+          r="20"
+          strokeWidth="5"
+          strokeLinecap="round"
+          stroke="currentColor"
+          strokeDasharray={RING_LENGTH}
+          strokeDashoffset={RING_LENGTH * (1 - shown / 100)}
+        />
+      </svg>
+      <span className="font-display text-base font-bold tabular-nums text-fg">{shown}</span>
+    </span>
+  );
 }
 
 function Signal({ signal }) {
@@ -121,11 +153,7 @@ export default function BusinessHealthCard() {
       title="Business health"
       description="The last 30 days next to the 30 before, and what's owed now."
       actions={
-        data.score !== null && (
-          <Badge tone={scoreTone(data.score)} title="Share of checks that look good">
-            {data.score}/100
-          </Badge>
-        )
+        data.score !== null && <ScoreRing score={data.score} />
       }
     >
       <div className={cx("grid gap-6", ai && "lg:grid-cols-2")}>

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, fetchAll } from "../../api";
+import { api } from "../../api";
 import { useAsync, useMediaQuery, useSchedule, useSchedulePrefs } from "../../hooks";
 import { DEFAULT_DURATION } from "../../utils/format";
 import { hiddenFromPrefs, prefsFromHidden } from "../../utils/schedulePrefs";
@@ -12,6 +12,7 @@ import { Modal } from "../ui/Modal";
 import Legend from "./Legend";
 import { JobQuickView, LunchQuickView } from "./QuickViews";
 import TeamDay from "./TeamDay";
+import DayDriveTimes from "../DayDriveTimes";
 import { createJob as addJob } from "../../utils/series";
 
 // FullCalendar is the largest dependency; load it only on pages with a calendar.
@@ -32,13 +33,12 @@ const PHONE_QUERY = "(max-width: 639px)";
 
 // Loaded only when the owner opens it, so client-admins never ask for owner-only lists.
 function NewJobDialog({ initial, onSubmit, onClose }) {
-  const clients = useAsync(fetchAll, "/api/clients");
   const employees = useAsync(api, "/api/employees");
   return (
     <Modal title="New job" description="Times are in your business time zone." onClose={onClose} size="lg">
-      {clients.error || employees.error ? (
-        <ErrorMessage error={clients.error || employees.error} />
-      ) : !clients.data || !employees.data ? (
+      {employees.error ? (
+        <ErrorMessage error={employees.error} />
+      ) : !employees.data ? (
         <Loading />
       ) : (
         <>
@@ -52,7 +52,6 @@ function NewJobDialog({ initial, onSubmit, onClose }) {
             </Link>
           </p>
           <JobForm
-            clients={clients.data}
             employees={employees.data}
             initial={initial}
             onSubmit={onSubmit}
@@ -98,6 +97,15 @@ function PrefsToast({ prefs }) {
 // is the compact owner calendar. Both share the saved show/hide toggles.
 // reloadKey: bump to refetch after a change made elsewhere on the page.
 // onChanged: called after a job is created or moved, so the page can refresh its totals.
+// What decides a day's drives: which jobs, when, how long, where, and who. When any of it
+// changes (a job is moved or reassigned), the drives are worked out again.
+function dayJobsKey(jobs, day) {
+  return (jobs || [])
+    .filter((job) => job.date === day)
+    .map((job) => [job.id, job.time, job.duration_minutes, job.status, job.client_id, job.assignees.map((person) => person.id).join("+")].join(":"))
+    .join(",");
+}
+
 export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKey = 0, onChanged }) {
   const page = variant === "page";
   const owner = mode === "owner";
@@ -107,6 +115,7 @@ export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKe
   const prefs = useSchedulePrefs();
   const [dialog, setDialog] = useState(null);
   const [moveError, setMoveError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const hidden = useMemo(() => hiddenFromPrefs(prefs.prefs), [prefs.prefs]);
   const zone = schedule.data?.timezone || timezone;
   const phone = useMediaQuery(PHONE_QUERY);
@@ -119,6 +128,19 @@ export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKe
     setMoveError(null);
     const updated = await api(`/api/jobs/${job.id}`, { method: "PATCH", body: patch });
     schedule.setData((data) => ({ ...data, jobs: data.jobs.map((item) => (item.id === updated.id ? updated : item)) }));
+    onChanged?.();
+  }
+
+  // From the quick view. A job someone already deleted elsewhere (404) is gone either way.
+  async function deleteJob(job) {
+    try {
+      await api(`/api/jobs/${job.id}`, { method: "DELETE" });
+    } catch (err) {
+      if (err.status !== 404) throw err;
+    }
+    schedule.setData((data) => ({ ...data, jobs: data.jobs.filter((item) => item.id !== job.id) }));
+    setDialog(null);
+    setNotice(`Deleted ${job.service_type}${job.client_name ? ` for ${job.client_name}` : ""}.`);
     onChanged?.();
   }
 
@@ -154,17 +176,22 @@ export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKe
   const customViews = page
     ? {
         teamDay: ({ day, today, now }) => (
-          <TeamDay
-            day={day}
-            today={today}
-            now={now}
-            data={schedule.data}
-            hidden={hidden}
-            mode={mode}
-            onJobClick={(job) => setDialog({ type: "job", job })}
-            onLunchClick={(lunch) => setDialog({ type: "lunch", lunch })}
-            onCreate={owner ? startCreate : undefined}
-          />
+          <>
+            <TeamDay
+              day={day}
+              today={today}
+              now={now}
+              data={schedule.data}
+              hidden={hidden}
+              mode={mode}
+              onJobClick={(job) => setDialog({ type: "job", job })}
+              onLunchClick={(lunch) => setDialog({ type: "lunch", lunch })}
+              onCreate={owner ? startCreate : undefined}
+            />
+            <div className="mt-4">
+              <DayDriveTimes date={day} team refreshKey={dayJobsKey(schedule.data?.jobs, day)} />
+            </div>
+          </>
         ),
       }
     : undefined;
@@ -201,16 +228,27 @@ export default function TeamSchedule({ mode, variant, timezone, selfId, reloadKe
       <p className="mt-3 text-xs text-muted">
         {owner
           ? page
-            ? `Click an empty time to schedule a job; in Team, the column picks who does it. Drag a job in ${phone ? "Day" : "Day or Week"} to move it.`
-            : "Click an empty time to schedule a job. Drag a job to move it, or drag its bottom edge to change its length."
+            ? `Click an empty time to schedule a job; in Team, the column picks who does it. Drag a job in ${phone ? "Day" : "Day or Week"} to move it. Click a job to open or delete it.`
+            : "Click an empty time to schedule a job. Drag a job to move it, or drag its bottom edge to change its length. Click a job to open or delete it."
           : "Read-only. Only the owner adds or moves jobs. Prices are not shown."}
       </p>
       {dialog?.type === "job" && (
-        <JobQuickView job={dialog.job} showMoney={owner} openTo={openTo(dialog.job)} onClose={() => setDialog(null)} />
+        <JobQuickView
+          job={dialog.job}
+          showMoney={owner}
+          openTo={openTo(dialog.job)}
+          onClose={() => setDialog(null)}
+          onDelete={owner ? () => deleteJob(dialog.job) : undefined}
+        />
       )}
       {dialog?.type === "lunch" && <LunchQuickView lunch={dialog.lunch} onClose={() => setDialog(null)} />}
       {dialog?.type === "create" && owner && (
         <NewJobDialog initial={dialog.initial} onSubmit={createJob} onClose={() => setDialog(null)} />
+      )}
+      {notice && (
+        <Toast tone="success" onClose={() => setNotice(null)}>
+          {notice}
+        </Toast>
       )}
       <PrefsToast prefs={prefs} />
     </div>

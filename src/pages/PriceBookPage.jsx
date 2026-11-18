@@ -1,16 +1,18 @@
 import { useMemo, useState } from "react";
 import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
-import { FormActions, Input } from "../components/Field";
+import { FormActions, Input, Select, TextArea } from "../components/Field";
 import Loading from "../components/Loading";
 import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
+import { Button, ButtonLink } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { EmptyState } from "../components/ui/Feedback";
 import { DollarIcon, PencilIcon, PlusIcon, SearchIcon } from "../components/ui/Icons";
 import { PageHeader } from "../components/ui/PageHeader";
+import { cx } from "../components/ui/styles";
 import { useAsync } from "../hooks";
 import { formatMoney } from "../utils/format";
+import { PRICE_BOOK_KINDS, filterPriceBook, kindLabel } from "../utils/priceBook";
 
 const PATH = "/api/price_book?include_archived=true";
 
@@ -20,10 +22,25 @@ function fieldErrors(error) {
   return { first, other: error && !Object.keys(errors).length };
 }
 
-function ItemForm({ item, categories, onSave, onCancel }) {
+// What each kind is for, shown under the Type picker.
+const KIND_HINTS = {
+  service: "Work you sell, like a gutter clean per home.",
+  material: "Something used up on a job. Crews can put it on a job's list, without seeing the price, and you can add what a job used to its invoice.",
+  labor: "Time by the hour. On an invoice, Add clocked hours fills in the hours worked on the job.",
+};
+
+function ItemForm({ item, startKind = "service", categories, onSave, onCancel }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [kind, setKind] = useState(item?.kind || startKind);
+  const [unit, setUnit] = useState(item ? item.unit || "" : startKind === "labor" ? "hour" : "");
   const { first, other } = fieldErrors(error);
+
+  function changeKind(next) {
+    setKind(next);
+    // Labor is by the hour unless the owner already typed something else.
+    if (next === "labor" && !unit.trim()) setUnit("hour");
+  }
 
   async function submit(event) {
     event.preventDefault();
@@ -33,8 +50,9 @@ function ItemForm({ item, categories, onSave, onCancel }) {
     try {
       await onSave({
         name: form.get("name"),
+        kind,
         unit_price: form.get("unit_price"),
-        unit: form.get("unit"),
+        unit,
         category: form.get("category"),
         description: form.get("description"),
       });
@@ -46,7 +64,17 @@ function ItemForm({ item, categories, onSave, onCancel }) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <Input label="Service" name="name" defaultValue={item?.name} maxLength={120} required error={first("name")} />
+      <div className="grid gap-3 sm:grid-cols-[11rem_1fr]">
+        <Select label="Type" value={kind} onChange={(event) => changeKind(event.target.value)} error={first("kind")}>
+          {PRICE_BOOK_KINDS.map(([value, label]) => (
+            <option key={value} value={value}>
+              {value === "labor" ? "Labor (hourly)" : label}
+            </option>
+          ))}
+        </Select>
+        <Input label="Name" name="name" defaultValue={item?.name} maxLength={120} required error={first("name")} />
+      </div>
+      <p className="-mt-1 text-xs text-muted">{KIND_HINTS[kind]}</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Input
           label="Price"
@@ -57,7 +85,15 @@ function ItemForm({ item, categories, onSave, onCancel }) {
           required
           error={first("unit_price")}
         />
-        <Input label="Per" name="unit" defaultValue={item?.unit || ""} maxLength={20} placeholder="window, hour" error={first("unit")} />
+        <Input
+          label="Per"
+          name="unit"
+          value={unit}
+          onChange={(event) => setUnit(event.target.value)}
+          maxLength={20}
+          placeholder={kind === "material" ? "each, box, gal" : kind === "labor" ? "hour" : "window, home"}
+          error={first("unit")}
+        />
         <div className="col-span-2">
           <Input
             label="Category"
@@ -75,12 +111,13 @@ function ItemForm({ item, categories, onSave, onCancel }) {
           </datalist>
         </div>
       </div>
-      <Input
+      <TextArea
         label="Detail on the line (optional)"
         name="description"
         defaultValue={item?.description || ""}
-        maxLength={200}
-        hint="Added after the name on quotes and invoices."
+        maxLength={2000}
+        rows={3}
+        hint="Added with the name on quotes and invoices. A long one, such as what is included and what is not, goes under the name."
         error={first("description")}
       />
       {other && <ErrorMessage error={error} />}
@@ -98,7 +135,8 @@ function ItemForm({ item, categories, onSave, onCancel }) {
   );
 }
 
-function ItemRow({ item, categories, onChanged }) {
+// showKind: label the row with its type (when the list mixes types).
+function ItemRow({ item, categories, showKind, onChanged }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -141,9 +179,10 @@ function ItemRow({ item, categories, onChanged }) {
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2 font-medium">
           <span className="[overflow-wrap:anywhere]">{item.name}</span>
+          {showKind && <Badge tone={item.kind === "service" ? "neutral" : "primary"}>{kindLabel(item.kind)}</Badge>}
           {item.archived && <Badge>Hidden</Badge>}
         </p>
-        {item.description && <p className="text-sm text-muted [overflow-wrap:anywhere]">{item.description}</p>}
+        {item.description && <p className="line-clamp-2 text-sm text-muted [overflow-wrap:anywhere]">{item.description}</p>}
       </div>
       <p className="shrink-0 text-sm font-medium tabular-nums">
         {formatMoney(item.unit_price_cents)}
@@ -167,24 +206,26 @@ export default function PriceBookPage() {
   const { data: items, setData, error } = useAsync(api, PATH);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState("all");
 
   const categories = useMemo(
     () => [...new Set((items || []).map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
     [items],
   );
   const groups = useMemo(() => {
-    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const matching = (items || []).filter((item) => {
-      const text = [item.name, item.description, item.category, item.unit].filter(Boolean).join(" ").toLowerCase();
-      return words.every((word) => text.includes(word));
-    });
     const byCategory = new Map();
-    for (const item of matching) {
+    for (const item of filterPriceBook(items, { query, kind })) {
       const key = item.category || "Other";
       byCategory.set(key, [...(byCategory.get(key) || []), item]);
     }
     return [...byCategory.entries()];
-  }, [items, query]);
+  }, [items, query, kind]);
+  const counts = useMemo(() => {
+    const found = { all: (items || []).length };
+    for (const item of items || []) found[item.kind] = (found[item.kind] || 0) + 1;
+    return found;
+  }, [items]);
+  const newKind = kind === "all" ? "service" : kind;
 
   const replace = (next) => setData((current) => current.map((item) => (item.id === next.id ? next : item)));
 
@@ -192,13 +233,18 @@ export default function PriceBookPage() {
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title="Price book"
-        description="Your services and usual prices. Add them to quotes and invoices with From price book, and change the price on any line."
+        description="Your services, materials, and hourly rates with their usual prices. Add them to quotes and invoices with From price book, and change the price on any line."
         actions={
           !adding && (
-            <Button onClick={() => setAdding(true)}>
-              <PlusIcon />
-              Add service
-            </Button>
+            <>
+              <ButtonLink to="/import" variant="secondary">
+                Import or export
+              </ButtonLink>
+              <Button onClick={() => setAdding(true)}>
+                <PlusIcon />
+                Add item
+              </Button>
+            </>
           )
         }
       />
@@ -207,8 +253,9 @@ export default function PriceBookPage() {
       {items && (
         <div className="space-y-4">
           {adding && (
-            <Card title="New service">
+            <Card title="New item">
               <ItemForm
+                startKind={newKind}
                 categories={categories}
                 onCancel={() => setAdding(false)}
                 onSave={async (body) => {
@@ -222,12 +269,12 @@ export default function PriceBookPage() {
           {items.length === 0 && !adding ? (
             <EmptyState
               icon={DollarIcon}
-              title="No services yet"
-              description="Add what you sell, like window cleaning per window or a gutter clean per home. Crew who quote on site can use it too."
+              title="Nothing in the price book yet"
+              description="Add what you charge for: services like a gutter clean per home, materials like sealant per tube, and labor by the hour. Crew who quote on site can use it too."
               action={
                 <Button onClick={() => setAdding(true)}>
                   <PlusIcon />
-                  Add your first service
+                  Add your first item
                 </Button>
               }
             />
@@ -240,16 +287,36 @@ export default function PriceBookPage() {
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search services"
+                    placeholder="Search the price book"
                     className="field pl-9"
                   />
                 </label>
-                {groups.length === 0 && <p className="text-sm text-muted">Nothing matches.</p>}
+                <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+                  {[["all", "All", "All"], ...PRICE_BOOK_KINDS].map(([value, , label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={kind === value}
+                      onClick={() => setKind(value)}
+                      className={cx(
+                        "rounded-full border px-3 py-1.5 text-sm font-medium",
+                        kind === value ? "border-primary bg-primary text-primary-fg" : "border-border text-muted hover:text-fg",
+                      )}
+                    >
+                      {label} <span className="tabular-nums opacity-75">{counts[value] || 0}</span>
+                    </button>
+                  ))}
+                </div>
+                {groups.length === 0 && (
+                  <p className="text-sm text-muted">
+                    {query.trim() || kind === "all" ? "Nothing matches." : `No ${kindLabel(kind).toLowerCase()} items yet. Use Add item to make one.`}
+                  </p>
+                )}
                 {groups.map(([category, rows]) => (
                   <Card key={category} title={category}>
                     <ul className="-my-3 divide-y divide-border">
                       {rows.map((item) => (
-                        <ItemRow key={item.id} item={item} categories={categories} onChanged={replace} />
+                        <ItemRow key={item.id} item={item} categories={categories} showKind={kind === "all"} onChanged={replace} />
                       ))}
                     </ul>
                   </Card>

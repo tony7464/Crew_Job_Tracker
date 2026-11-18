@@ -4,33 +4,17 @@ import { api } from "../api";
 import { Input, Select, TextArea } from "../components/Field";
 import PhotoPicker from "../components/PhotoPicker";
 import { BusinessHeading as BusinessHeadingBase, PublicShell, StatusCard } from "../components/PublicPage";
+import RequestContactFields from "../components/RequestContactFields";
 import { Button } from "../components/ui/Button";
 import { Alert, Spinner } from "../components/ui/Feedback";
 import { CheckIcon, PlusIcon, XIcon } from "../components/ui/Icons";
-import {
-  MAX_NOTES,
-  MAX_PREFERRED_WINDOWS,
-  TIME_WINDOWS,
-  emailLooksValid,
-  fieldErrors,
-  localToday,
-  phoneLooksValid,
-} from "../utils/requests";
+import { EMPTY_REQUEST, fieldValue, requestBody, validateRequest } from "../utils/requestForm";
+import { MAX_NOTES, MAX_PREFERRED_WINDOWS, TIME_WINDOWS, fieldErrors, localToday } from "../utils/requests";
 
 const FALLBACK_TITLE = "Request a service";
 // The server treats a submit sooner than REQUEST_MIN_SECONDS (default 3) after the
 // form loaded as a bot. People who fill in a form that fast (with autofill) wait a moment.
 const MIN_FILL_MS = 3500;
-const EMPTY = {
-  name: "",
-  phone: "",
-  email: "",
-  address: "",
-  service_type: "",
-  preferred_text: "",
-  notes: "",
-  website: "",
-};
 const FIELD_ORDER = ["name", "contact", "phone", "email", "address", "service_type", "preferred_windows", "photos"];
 
 // End with one period, even when the business name already ends with one ("Co.").
@@ -57,21 +41,6 @@ function dayAfter(days) {
   date.setDate(date.getDate() + days);
   const pad = (value) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-// Checks done in the browser before sending. The server repeats every one.
-function validate(values, windows) {
-  const errors = {};
-  if (!values.name.trim()) errors.name = "Enter your name.";
-  if (!values.address.trim()) errors.address = "Enter the address for the job.";
-  if (!values.service_type) errors.service_type = "Pick a service.";
-  const phone = values.phone.trim();
-  const email = values.email.trim();
-  if (!phone && !email) errors.contact = "Enter a phone number or an email address so we can reach you.";
-  if (phone && !phoneLooksValid(phone)) errors.phone = "Enter a phone number with 7 to 15 digits, like 555-123-4567.";
-  if (email && !emailLooksValid(email)) errors.email = "Enter an email address like name@example.com.";
-  if (windows.some((row) => !row.date)) errors.preferred_windows = "Pick a date for each preferred time, or remove it.";
-  return errors;
 }
 
 function Shell({ title, children }) {
@@ -175,7 +144,7 @@ function PublicRequest({ token }) {
   // status: loading | missing | closed | open | sent | failed
   const [status, setStatus] = useState("loading");
   const [form, setForm] = useState(null);
-  const [values, setValues] = useState(EMPTY);
+  const [values, setValues] = useState(EMPTY_REQUEST);
   const [windows, setWindows] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [errors, setErrors] = useState({});
@@ -238,7 +207,7 @@ function PublicRequest({ token }) {
 
   function setValue(name) {
     return (event) => {
-      const value = event.target.value;
+      const value = fieldValue(event);
       setValues((current) => ({ ...current, [name]: value }));
       setErrors((current) => {
         if (!current[name] && !(current.contact && (name === "phone" || name === "email"))) return current;
@@ -254,7 +223,7 @@ function PublicRequest({ token }) {
     return () => {
       // Empty fields are only flagged on Send, so tabbing past one is not an error.
       if (!values[name].trim()) return;
-      const found = validate(values, windows);
+      const found = validateRequest(values, windows);
       setErrors((current) => ({ ...current, [name]: found[name] }));
     };
   }
@@ -271,7 +240,7 @@ function PublicRequest({ token }) {
     event.preventDefault();
     setFormError(null);
     setNotice(null);
-    const found = validate(values, windows);
+    const found = validateRequest(values, windows);
     if (Object.values(found).some(Boolean)) {
       setErrors(found);
       focusFirstError(found);
@@ -281,23 +250,10 @@ function PublicRequest({ token }) {
     setSubmitting(true);
     try {
       await waitForMinimumTime(loadedAt.current);
-      const trimmed = (value) => value.trim() || null;
       await api(`/api/public/requests/${encodeURIComponent(token)}`, {
         method: "POST",
         skipAuth: true,
-        body: {
-          name: values.name.trim(),
-          phone: trimmed(values.phone),
-          email: trimmed(values.email),
-          address: values.address.trim(),
-          service_type: values.service_type,
-          preferred_windows: windows.map(({ date, window }) => ({ date, window })),
-          preferred_text: trimmed(values.preferred_text),
-          notes: trimmed(values.notes),
-          photos: photos.map((photo) => photo.dataUrl),
-          website: values.website,
-          form_token: form.form_token,
-        },
+        body: requestBody(values, { windows, photos, formToken: form.form_token }),
       });
       // 201 (saved) and 202 both mean "sent" here.
       photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
@@ -345,7 +301,7 @@ function PublicRequest({ token }) {
   }
 
   async function sendAnother() {
-    setValues(EMPTY);
+    setValues(EMPTY_REQUEST);
     setWindows([]);
     setPhotos([]);
     setErrors({});
@@ -435,37 +391,13 @@ function PublicRequest({ token }) {
             maxLength={120}
             required
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Phone"
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={values.phone}
-              onChange={setValue("phone")}
-              onBlur={checkField("phone")}
-              error={errors.phone}
-              maxLength={30}
-            />
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={values.email}
-              onChange={setValue("email")}
-              onBlur={checkField("email")}
-              error={errors.email}
-              maxLength={254}
-            />
-          </div>
-          {errors.contact ? (
-            <p className="-mt-2 text-xs font-medium text-danger" role="alert">{errors.contact}</p>
-          ) : (
-            <p className="-mt-2 text-xs text-muted">A phone number, an email address, or both.</p>
-          )}
+          <RequestContactFields
+            businessName={form.business_name}
+            values={values}
+            errors={errors}
+            onChange={setValue}
+            onBlur={checkField}
+          />
         </Section>
 
         <Section title="The job">

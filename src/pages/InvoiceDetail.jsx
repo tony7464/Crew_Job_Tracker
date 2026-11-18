@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import ConfirmDelete from "../components/ConfirmDelete";
 import CopyLink from "../components/CopyLink";
 import EmailSendResult from "../components/EmailSendResult";
 import ErrorMessage from "../components/ErrorMessage";
+import TaxRateHelper from "../components/tax/TaxRateHelper";
 import { Input, Select, TextArea } from "../components/Field";
 import Loading from "../components/Loading";
 import { ItemsEditor, QuoteItems, QuoteTotals } from "../components/QuoteLines";
@@ -16,7 +17,7 @@ import { BriefcaseIcon, CheckIcon, DollarIcon, ExternalIcon, MailIcon, MapPinIco
 import { Modal } from "../components/ui/Modal";
 import { PageHeader } from "../components/ui/PageHeader";
 import { cx } from "../components/ui/styles";
-import { useAsync } from "../hooks";
+import { useAsync, useStripeLive } from "../hooks";
 import { formatDay, formatMoney } from "../utils/format";
 import {
   MANUAL_METHODS,
@@ -24,6 +25,8 @@ import {
   MIN_INVOICE_CENTS,
   PROVIDER_LABELS,
   invoicePath,
+  needsServerMode,
+  opensInStripe,
   stripePaymentUrl,
 } from "../utils/invoices";
 import {
@@ -104,8 +107,10 @@ function validate(values, items, total, { sending }) {
 
 // --- Draft editor ---------------------------------------------------------------
 
-function InvoiceEditor({ initial, onSave, onSend, onMarkPaid, children }) {
+// jobId: the job this invoice is for, if any, so its materials and clocked hours can be added as lines.
+function InvoiceEditor({ initial, jobId, onSave, onSend, onMarkPaid, children }) {
   const [values, setValues] = useState(initial.values);
+  const fillTaxRate = useCallback((rate) => setValues((current) => ({ ...current, tax_rate: rate })), []);
   const [items, setItems] = useState(initial.items);
   const [saved, setSaved] = useState(() => snapshot(initial.values, initial.items));
   const [errors, setErrors] = useState({});
@@ -178,6 +183,7 @@ function InvoiceEditor({ initial, onSave, onSend, onMarkPaid, children }) {
             lineTotals={totals.lineTotals}
             listError={errors.items}
             disabled={disabled}
+            jobId={jobId}
           />
         </Card>
         <Card title="Details">
@@ -269,6 +275,7 @@ function InvoiceEditor({ initial, onSave, onSend, onMarkPaid, children }) {
             </span>
           </label>
           {errors.tax_rate && <p className="-mt-3 mb-3 text-right text-xs font-medium text-danger">{errors.tax_rate}</p>}
+          <TaxRateHelper address={values.customer_address} value={values.tax_rate} onUse={fillTaxRate} disabled={disabled} />
           <QuoteTotals
             subtotal={totals.subtotal}
             tax={totals.tax}
@@ -315,7 +322,9 @@ function InvoiceEditor({ initial, onSave, onSend, onMarkPaid, children }) {
 // --- Messages -------------------------------------------------------------------
 
 // Payments that arrived but could not be applied: refund them in Stripe, or sort it out with the client.
-function AttentionAlert({ invoice }) {
+// stripeLive: the server's Stripe mode (useStripeLive), for dashboard links whose payment's
+// own ids do not say its mode.
+function AttentionAlert({ invoice, stripeLive }) {
   const flagged = (invoice.payments || []).filter((payment) => !payment.applied);
   if (!flagged.length) return null;
   return (
@@ -325,11 +334,11 @@ function AttentionAlert({ invoice }) {
           <li key={payment.id}>
             <span className="font-medium tabular-nums">{formatMoney(payment.amount_cents)}</span> on{" "}
             {formatMoment(payment.created_at)}: {payment.flag_message}
-            {payment.provider === "stripe" && payment.payment_intent_id && (
+            {opensInStripe(payment) && (
               <>
                 {" "}
                 <a
-                  href={stripePaymentUrl(payment.payment_intent_id)}
+                  href={stripePaymentUrl(payment, stripeLive)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium underline"
@@ -374,7 +383,7 @@ function StatusAlert({ invoice }) {
 
 // --- Cards ----------------------------------------------------------------------
 
-function PaymentsCard({ invoice }) {
+function PaymentsCard({ invoice, stripeLive }) {
   const payments = invoice.payments || [];
   if (!payments.length) return null;
   return (
@@ -401,8 +410,8 @@ function PaymentsCard({ invoice }) {
                   <div className="flex gap-1.5">
                     <dt>Payment:</dt>
                     <dd className="min-w-0 break-all font-mono">
-                      {payment.provider === "stripe" ? (
-                        <a href={stripePaymentUrl(payment.payment_intent_id)} target="_blank" rel="noopener noreferrer" className="link">
+                      {opensInStripe(payment) ? (
+                        <a href={stripePaymentUrl(payment, stripeLive)} target="_blank" rel="noopener noreferrer" className="link">
                           {payment.payment_intent_id}
                         </a>
                       ) : (
@@ -644,7 +653,7 @@ function MarkPaidDialog({ invoice, onClose, onConfirm }) {
   );
 }
 
-function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMarkPaid, onRemind }) {
+function InvoiceSummary({ invoice, stripeLive, sendResult, onResend, onRevise, onVoid, onMarkPaid, onRemind }) {
   const paid = invoice.status === "paid";
   return (
     <div className="space-y-6">
@@ -655,7 +664,7 @@ function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMar
         to={sendResult?.invoice.customer_email}
         customerName={sendResult?.invoice.customer_name}
       />
-      <AttentionAlert invoice={invoice} />
+      <AttentionAlert invoice={invoice} stripeLive={stripeLive} />
       <StatusAlert invoice={invoice} />
       <div className="grid items-start gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
@@ -669,7 +678,7 @@ function InvoiceSummary({ invoice, sendResult, onResend, onRevise, onVoid, onMar
               total={invoice.total_cents}
             />
           </Card>
-          <PaymentsCard invoice={invoice} />
+          <PaymentsCard invoice={invoice} stripeLive={stripeLive} />
           <Card title="Details">
             <dl className="space-y-3 text-sm">
               <div>
@@ -734,6 +743,9 @@ function InvoiceView({ id }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: invoice, setData, error } = useAsync(api, invoicePath(id));
+  // Live or test, for links into Stripe's dashboard whose payment's own ids do not say: asked
+  // only when a payment needs it.
+  const stripeLive = useStripeLive(Boolean(invoice?.payments?.some(needsServerMode)));
   const [sendResult, setSendResult] = useState(null);
   const [notice, setNotice] = useState(location.state?.notice || null);
   const [markingPaid, setMarkingPaid] = useState(false);
@@ -829,12 +841,13 @@ function InvoiceView({ id }) {
           <InvoiceEditor
             key={invoice.updated_at}
             initial={formFromInvoice(invoice)}
+            jobId={invoice.job?.id}
             onSave={save}
             onSend={send}
             onMarkPaid={() => setMarkingPaid(true)}
           >
             {notice && <Alert tone="success">{notice}</Alert>}
-            <AttentionAlert invoice={invoice} />
+            <AttentionAlert invoice={invoice} stripeLive={stripeLive} />
             <Card title="Linked">
               <Linked invoice={invoice} />
             </Card>
@@ -853,6 +866,7 @@ function InvoiceView({ id }) {
       ) : (
         <InvoiceSummary
           invoice={invoice}
+          stripeLive={stripeLive}
           sendResult={sendResult}
           onResend={resend}
           onRevise={revise}

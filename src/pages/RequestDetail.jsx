@@ -28,6 +28,7 @@ import { notifyRequestsChanged, useAsync } from "../hooks";
 import { formatMoney, statusLabel } from "../utils/format";
 import { REQUEST_STATUSES, formatReceived, formatWindow } from "../utils/requests";
 import { isOwner } from "../utils/roles";
+import { requestConsentLine } from "../utils/smsConsent";
 
 const STATUS_HINTS = {
   new: "No decision yet.",
@@ -319,7 +320,15 @@ function RequestDetailView({ id }) {
             <dl className="space-y-3">
               <Detail icon={PhoneIcon} label="Phone">
                 {request.phone ? (
-                  <a href={`tel:${request.phone}`} className="link">{request.phone}</a>
+                  <>
+                    <a href={`tel:${request.phone}`} className="link">{request.phone}</a>
+                    <span className="mt-0.5 block text-xs text-muted">{requestConsentLine(request)}</span>
+                  </>
+                ) : request.client ? (
+                  <>
+                    <span className="text-muted">No phone on the request</span>
+                    <span className="mt-0.5 block text-xs text-muted">{requestConsentLine(request)}</span>
+                  </>
                 ) : (
                   <span className="text-muted">No phone</span>
                 )}

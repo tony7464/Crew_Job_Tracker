@@ -15,7 +15,7 @@ export default function QuickAddButton() {
   return (
     <Link
       to="/visits/new"
-      className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-primary px-5 text-base font-semibold text-primary-fg shadow-pop sm:hidden"
+      className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-30 inline-flex h-14 items-center gap-2 rounded-full bg-brand px-5 text-base font-semibold text-primary-fg shadow-glow transition active:scale-95 sm:hidden"
     >
       <PlusIcon className="h-5 w-5" />
       New quote

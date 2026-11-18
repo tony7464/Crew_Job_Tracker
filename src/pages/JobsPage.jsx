@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api, fetchAll } from "../api";
+import { api } from "../api";
 import ErrorMessage from "../components/ErrorMessage";
 import JobForm from "../components/JobForm";
 import JobList from "../components/JobList";
@@ -15,7 +15,7 @@ import { STATUSES, statusLabel } from "../utils/format";
 import { createJob as addJob } from "../utils/series";
 
 export default function JobsPage() {
-  // ?new=1 opens the new-job form; ?client=<id> also picks the client.
+  // ?new=1 opens the new-job form; ?client=<id> also picks the client, unless it is archived.
   const [searchParams, setSearchParams] = useSearchParams();
   const presetClient = searchParams.get("client");
   const [creating, setCreating] = useState(() => Boolean(presetClient || searchParams.get("new")));
@@ -25,7 +25,6 @@ export default function JobsPage() {
   const [pending, setPending] = useState({});
   const pendingKeys = useRef(new Set());
   const query = [status && `status=${status}`, paid && `paid=${paid}`].filter(Boolean).join("&");
-  const clientsState = useAsync(fetchAll, "/api/clients");
   const employeesState = useAsync(api, "/api/employees");
   const jobsState = usePaged("/api/jobs", query);
 
@@ -90,15 +89,13 @@ export default function JobsPage() {
     }
   }
 
-  const error = clientsState.error || employeesState.error || jobsState.error;
+  const error = employeesState.error || jobsState.error;
   if (error) return <ErrorMessage error={error} />;
-  if (!clientsState.data || !employeesState.data || !jobsState.result) return <Loading />;
+  if (!employeesState.data || !jobsState.result) return <Loading />;
 
   const statusOptions = [["", "All statuses"], ...STATUSES.map((item) => [item, statusLabel(item)])];
   const paidOptions = [["", "Paid and unpaid"], ["true", "Paid"], ["false", "Unpaid"]];
   const total = jobsState.result.total;
-  // The client list leaves out archived clients, so a link for one opens a blank form.
-  const presetActive = presetClient && clientsState.data.some((client) => String(client.id) === presetClient);
 
   return (
     <div className="space-y-5">
@@ -146,9 +143,8 @@ export default function JobsPage() {
       {creating && (
         <Modal title="New job" description="Times are in your business time zone." onClose={closeForm} size="lg">
           <JobForm
-            clients={clientsState.data}
             employees={employeesState.data}
-            initial={presetActive ? { client_id: presetClient } : null}
+            initial={presetClient ? { client_id: presetClient } : null}
             onSubmit={createJob}
             onCancel={closeForm}
             submitLabel="Add job"

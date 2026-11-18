@@ -1,9 +1,37 @@
+import { useLayoutEffect, useRef } from "react";
 import { formatMoney } from "../utils/format";
-import { MAX_DESCRIPTION, MAX_ITEMS, blankItem, formatPercent, formatQuantity, isBlankLine } from "../utils/quotes";
+import { appendLines } from "../utils/priceBook";
+import { MAX_DESCRIPTION, MAX_ITEMS, blankItem, formatPercent, formatQuantity, splitDescription } from "../utils/quotes";
+import JobLinesPicker from "./quotes/JobLinesPicker";
 import PriceBookPicker from "./quotes/PriceBookPicker";
 import { Button } from "./ui/Button";
 import { PlusIcon, XIcon } from "./ui/Icons";
 import { cx } from "./ui/styles";
+
+// A line's description: its first line, then any detail (scope, exclusions) in smaller text under it.
+function LineText({ text }) {
+  const [first, rest] = splitDescription(text);
+  return (
+    <>
+      {first}
+      {rest && <span className="mt-1 block whitespace-pre-line text-xs font-normal text-muted">{rest}</span>}
+    </>
+  );
+}
+
+// The description box in the editor: one line tall for most lines, and as tall as its
+// text (up to a point) for a long one.
+function DescriptionBox({ value, className, ...props }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    box.style.height = "auto";
+    // scrollHeight leaves out the top and bottom border.
+    box.style.height = `${box.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={1} value={value} {...props} className={cx("max-h-64 resize-none", className)} />;
+}
 
 // Line items (of a quote or an invoice), read-only. A table from sm up; stacked rows on phones.
 export function QuoteItems({ items }) {
@@ -23,7 +51,9 @@ export function QuoteItems({ items }) {
         <tbody className="divide-y divide-border">
           {items.map((item, index) => (
             <tr key={item.id ?? index} className="align-top">
-              <td className="py-2.5 pr-3 [overflow-wrap:anywhere]">{item.description}</td>
+              <td className="py-2.5 pr-3 [overflow-wrap:anywhere]">
+                <LineText text={item.description} />
+              </td>
               <td className="py-2.5 text-right tabular-nums">{formatQuantity(item.quantity)}</td>
               <td className="py-2.5 text-right tabular-nums">{formatMoney(item.unit_price_cents)}</td>
               <td className="py-2.5 text-right font-medium tabular-nums">{formatMoney(item.line_total_cents)}</td>
@@ -35,7 +65,9 @@ export function QuoteItems({ items }) {
         {items.map((item, index) => (
           <li key={item.id ?? index} className="flex items-start justify-between gap-3 py-3 first:pt-0">
             <div className="min-w-0">
-              <p className="text-sm text-fg [overflow-wrap:anywhere]">{item.description}</p>
+              <p className="text-sm text-fg [overflow-wrap:anywhere]">
+                <LineText text={item.description} />
+              </p>
               <p className="mt-0.5 text-xs tabular-nums text-muted">
                 {formatQuantity(item.quantity)} × {formatMoney(item.unit_price_cents)}
               </p>
@@ -79,7 +111,7 @@ function ItemRow({ item, index, errors, lineTotal, onChange, onRemove, canRemove
       <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 sm:grid-cols-[minmax(0,1fr)_5.5rem_7.5rem_6.5rem_2.25rem] sm:items-start">
         <label className="col-span-2 block sm:col-span-1">
           <span className={label}>Description {index + 1}</span>
-          <input
+          <DescriptionBox
             value={item.description}
             onChange={set("description")}
             placeholder="What you will do"
@@ -146,7 +178,8 @@ function ItemRow({ item, index, errors, lineTotal, onChange, onRemove, canRemove
 
 // The line item editor for quotes and invoices: a grid from sm up, stacked cards on phones.
 // priceBook: offer "From price book" (the owner, and crew who can quote, can read it).
-export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError, disabled, priceBook = true }) {
+// jobId: the job an invoice is for; offers "Add job materials" and "Add clocked hours" (owner only).
+export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError, disabled, priceBook = true, jobId = null }) {
   return (
     <div>
       <div className="hidden grid-cols-[minmax(0,1fr)_5.5rem_7.5rem_6.5rem_2.25rem] gap-x-2 border-b border-border pb-2 text-xs font-semibold uppercase tracking-wide text-muted sm:grid">
@@ -181,15 +214,22 @@ export function ItemsEditor({ items, setItems, itemErrors, lineTotals, listError
           {priceBook && (
             <PriceBookPicker
               disabled={disabled}
-              onPick={(line) => {
-                // An untouched last line is replaced instead of left empty above the new one.
-                const last = items[items.length - 1];
-                const kept = last && isBlankLine(last) ? items.slice(0, -1) : items;
-                if (kept.length < MAX_ITEMS) setItems([...kept, line]);
-              }}
+              // An untouched last line is replaced instead of left empty above the new one.
+              onPick={(line) => setItems(appendLines(items, [line]).items)}
             />
           )}
         </div>
+      )}
+      {jobId && items.length < MAX_ITEMS && (
+        <JobLinesPicker
+          jobId={jobId}
+          disabled={disabled}
+          onAdd={(lines) => {
+            const next = appendLines(items, lines);
+            if (next.added) setItems(next.items);
+            return next.added;
+          }}
+        />
       )}
     </div>
   );

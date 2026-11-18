@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { useAsync } from "../hooks";
+import { uploadMode } from "../utils/directUpload";
 import { KIND_LABELS, PHOTO_KINDS, photoSrc } from "../utils/jobPhotos";
 import ErrorMessage from "./ErrorMessage";
 import Loading from "./Loading";
@@ -29,6 +30,8 @@ export default function JobPhotos({ jobId, reloadKey = 0, defaultKind = "progres
       onPhotosChanged?.();
     },
     keepDone: false,
+    // Straight to storage when the server offers it; the files never pass through the API.
+    mode: uploadMode(data) === "direct" ? "direct" : "form",
   });
 
   const photos = data?.photos;

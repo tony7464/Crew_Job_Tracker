@@ -1,4 +1,5 @@
 import { joinApiBase } from "./utils/apiBase";
+import { siteHost } from "./utils/siteHost";
 
 const FORBIDDEN = "You do not have access to this. Ask the business owner if you need it.";
 
@@ -6,7 +7,8 @@ const FORBIDDEN = "You do not have access to this. Ask the business owner if you
 // the static files. Empty (the default) keeps relative /api paths, for the Vite
 // proxy and the Flask-served app. Set it, such as https://api.crewjobtrack.com, to
 // call an API on another host; changing that host means rebuilding the client.
-const API_BASE = import.meta.env.VITE_API_BASE || "";
+// On a business's own web address the API is on that same address (see utils/siteHost.js).
+const API_BASE = siteHost() ? "" : import.meta.env.VITE_API_BASE || "";
 
 // The URL for an API path ("/api/..."), on VITE_API_BASE when it is set.
 // Use it for API URLs the browser loads directly, such as <img src>.

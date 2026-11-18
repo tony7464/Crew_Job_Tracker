@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, setOnForbidden, setOnUnauthorized } from "../api";
 import { homePath } from "../utils/roles";
 import { rememberSignedIn } from "./signedIn";
@@ -16,13 +16,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [verification, setVerification] = useState(null);
 
+  // The user as of the last render, for handlers that outlive it.
+  const current = useRef(null);
+  useEffect(() => {
+    current.current = user;
+  }, [user]);
+
   // Re-read the session, for example after the owner changes this person's access.
+  // Returns who it found (null when logged out).
   const refresh = useCallback(async () => {
-    try {
-      setUser(await api("/api/check_session", { skipAuth: true }));
-    } catch {
-      setUser(null);
-    }
+    const next = await api("/api/check_session", { skipAuth: true }).catch(() => null);
+    setUser(next);
+    return next;
   }, []);
 
   // Remember on this device whether someone is signed in (see signedIn.js).
@@ -32,8 +37,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setOnUnauthorized(() => setUser(null));
-    setOnForbidden(() => {
-      refresh();
+    setOnForbidden(async () => {
+      const wasLooking = Boolean(current.current?.support_view);
+      const next = await refresh();
+      // A support view that the owner ended: leave the business's pages for the admin's own.
+      if (wasLooking && next && !next.support_view) window.location.assign("/admin");
     });
     api("/api/check_session", { skipAuth: true })
       .then(setUser)
@@ -83,6 +91,19 @@ export function AuthProvider({ children }) {
     return next;
   }
 
+  // An admin starts looking at a business as its owner does (read-only), or stops. Both
+  // reload, so nothing from one account is left on screen in the other.
+  async function startSupportView(businessId) {
+    await api(`/api/admin/businesses/${businessId}/support_view`, { method: "POST" });
+    window.location.assign("/dashboard");
+  }
+
+  async function endSupportView() {
+    const businessId = user?.support_view ? user.id : null;
+    await api("/api/support_view", { method: "DELETE" });
+    window.location.assign(businessId ? `/admin/businesses/${businessId}` : "/admin");
+  }
+
   async function resendVerification() {
     const result = await api("/api/me/email/resend-verification", { method: "POST" });
     setVerification(result);
@@ -106,6 +127,8 @@ export function AuthProvider({ children }) {
         acceptInvite,
         joinWithInvite,
         switchCompany,
+        startSupportView,
+        endSupportView,
         verification,
         setVerification,
         resendVerification,

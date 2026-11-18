@@ -5,7 +5,7 @@ import { CheckIcon, InfoIcon } from "./ui/Icons";
 // no login, a theme toggle, and a small footer.
 export function PublicShell({ title, footer, children }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-bg">
+    <div className="flex min-h-dvh flex-col">
       <div className="mx-auto flex w-full max-w-xl items-center justify-end px-4 pt-3 print:hidden sm:px-6">
         <ThemeToggle />
       </div>
@@ -26,12 +26,12 @@ export function BusinessHeading({ name, fallback, subtitle }) {
     <header className="mb-5 flex items-center gap-3 sm:mb-6">
       <span
         aria-hidden="true"
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-semibold text-primary-fg shadow-card"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand font-display text-xl font-bold text-primary-fg shadow-glow"
       >
         {name ? name.trim().charAt(0).toUpperCase() : <CheckIcon className="h-6 w-6" />}
       </span>
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold tracking-tight text-fg [overflow-wrap:anywhere] sm:text-2xl">{name || fallback}</h1>
+        <h1 className="text-xl font-bold tracking-tight text-fg [overflow-wrap:anywhere] sm:text-2xl">{name || fallback}</h1>
         {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
       </div>
     </header>
